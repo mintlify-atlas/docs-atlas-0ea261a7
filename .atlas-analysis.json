@@ -1,0 +1,150 @@
+{
+  "projectType": "api-service",
+  "projectName": "Gran Camerino E-commerce API",
+  "projectDescription": "RESTful API for a sports jersey e-commerce platform with comprehensive product catalog, order management, and payment processing",
+  "theme": "sequoia",
+  "primaryColor": "#1e40af",
+  "lightColor": "#3b82f6",
+  "darkColor": "#1e3a8a",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/architecture",
+              "concepts/authentication",
+              "concepts/payment-processing"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/product-management",
+              "guides/order-processing",
+              "guides/user-management",
+              "guides/image-handling"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api/auth/register",
+              "api/auth/login",
+              "api/auth/logout",
+              "api/auth/refresh",
+              "api/auth/me"
+            ]
+          },
+          {
+            "group": "Products",
+            "pages": [
+              "api/products/list",
+              "api/products/get",
+              "api/products/create",
+              "api/products/update",
+              "api/products/delete",
+              "api/products/variants",
+              "api/products/images"
+            ]
+          },
+          {
+            "group": "Orders",
+            "pages": [
+              "api/orders/list",
+              "api/orders/create",
+              "api/orders/get",
+              "api/orders/status",
+              "api/orders/payment",
+              "api/orders/cancel"
+            ]
+          },
+          {
+            "group": "Catalog",
+            "pages": [
+              "api/catalog/categories",
+              "api/catalog/teams",
+              "api/catalog/leagues",
+              "api/catalog/countries",
+              "api/catalog/continents",
+              "api/catalog/sizes",
+              "api/catalog/special-categories"
+            ]
+          },
+          {
+            "group": "User Features",
+            "pages": [
+              "api/user/addresses",
+              "api/user/favorites",
+              "api/user/coupons"
+            ]
+          },
+          {
+            "group": "Images",
+            "pages": [
+              "api/images/upload",
+              "api/images/delete",
+              "api/images/optimize"
+            ]
+          },
+          {
+            "group": "Admin",
+            "pages": [
+              "api/admin/users",
+              "api/admin/bulk-operations"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "JWT-based authentication with role-based access control",
+    "Comprehensive product catalog with variants and images",
+    "Multi-payment gateway support (Wompi, NOWPayments)",
+    "Order management with payment tracking",
+    "Address and shipping management",
+    "Coupon and discount system",
+    "Cloudinary image optimization",
+    "Favorites/wishlist functionality",
+    "Admin dashboard capabilities",
+    "WooCommerce import integration"
+  ],
+  "publicApiSurface": [
+    "POST /api/register",
+    "POST /api/login",
+    "GET /api/products",
+    "GET /api/products/{product}",
+    "POST /api/orders",
+    "GET /api/orders",
+    "GET /api/categories",
+    "GET /api/teams",
+    "GET /api/leagues",
+    "GET /api/countries",
+    "GET /api/continents",
+    "GET /api/sizes",
+    "GET /api/special-categories",
+    "POST /api/addresses",
+    "GET /api/favorites",
+    "POST /api/favorites",
+    "POST /api/coupons/validate",
+    "POST /api/images/upload",
+    "GET /api/crypto-currencies",
+    "POST /api/crypto-estimate"
+  ]
+}
