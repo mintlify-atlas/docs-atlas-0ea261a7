@@ -35,8 +35,8 @@ Creates a new user account in the system. Upon successful registration, the user
   The created user object.
   
   <Expandable title="User Object">
-    <ResponseField name="id" type="integer">
-      Unique identifier for the user.
+    <ResponseField name="id" type="string">
+      Unique identifier for the user (UUID).
     </ResponseField>
     
     <ResponseField name="name" type="string">
@@ -92,7 +92,7 @@ curl -X POST https://api.grancamerino.com/api/register \
 {
   "message": "User registered successfully",
   "user": {
-    "id": 1,
+    "id": "9d3c5e7f-1234-5678-9abc-def012345678",
     "name": "John Doe",
     "email": "john.doe@example.com",
     "role": "client",
