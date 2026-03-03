@@ -1,0 +1,134 @@
+---
+title: Optimize image
+description: Generate optimized image URLs with custom transformations
+---
+
+## POST /api/images/optimize
+
+Generate an optimized URL for an existing Cloudinary image with custom dimensions and transformations.
+
+<Warning>Requires authentication with a valid Bearer token.</Warning>
+
+## Request
+
+### Headers
+
+```http
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+### Parameters
+
+<ParamField body="public_id" type="string" required>
+  The Cloudinary public ID of the image to optimize
+</ParamField>
+
+<ParamField body="width" type="integer">
+  Desired width in pixels. Range: 1-2000.
+</ParamField>
+
+<ParamField body="height" type="integer">
+  Desired height in pixels. Range: 1-2000.
+</ParamField>
+
+<ParamField body="crop" type="string">
+  Crop mode. Options: `fill`, `scale`, `thumb`, `limit`.
+  
+  - `fill`: Fill the given dimensions, cropping if necessary
+  - `scale`: Scale to fit dimensions, may change aspect ratio
+  - `thumb`: Create a thumbnail with the given dimensions
+  - `limit`: Resize only if original is larger
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success` or `error`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Optimization result
+  
+  <Expandable title="data">
+    <ResponseField name="optimized_url" type="string">
+      The optimized image URL with transformations applied
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example
+
+### Request
+
+```bash
+curl -X POST https://api.grancamerino.com/api/images/optimize \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "public_id": "products/jerseys/abc123",
+    "width": 600,
+    "height": 600,
+    "crop": "fill"
+  }'
+```
+
+### Response
+
+```json
+{
+  "status": "success",
+  "data": {
+    "optimized_url": "https://res.cloudinary.com/your-cloud/image/upload/w_600,h_600,c_fill/v1234567890/products/jerseys/abc123.jpg"
+  }
+}
+```
+
+## Error responses
+
+### Validation error (422)
+
+```json
+{
+  "status": "error",
+  "message": "Error de validación",
+  "errors": {
+    "width": [
+      "The width must be between 1 and 2000."
+    ]
+  }
+}
+```
+
+### Optimization error (500)
+
+```json
+{
+  "status": "error",
+  "message": "Error al generar URL optimizada",
+  "error": "Invalid public_id"
+}
+```
+
+## Use cases
+
+<CardGroup cols={2}>
+  <Card title="Thumbnails" icon="image">
+    Generate small previews for lists and grids
+  </Card>
+  <Card title="Responsive images" icon="mobile">
+    Create multiple sizes for different screen sizes
+  </Card>
+  <Card title="Product details" icon="magnifying-glass">
+    High-quality images for product pages
+  </Card>
+  <Card title="Performance" icon="gauge-high">
+    Reduce bandwidth and improve load times
+  </Card>
+</CardGroup>
+
+<Note>
+  All optimized URLs automatically use:
+  - Quality: auto (Cloudinary selects optimal quality)
+  - Format: auto (WebP for browsers that support it)
+</Note>

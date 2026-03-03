@@ -1,0 +1,226 @@
+---
+title: Product Variants
+---
+
+Manage product size variants. All variant endpoints require admin authentication.
+
+<Warning>
+  All variant management endpoints require admin privileges.
+</Warning>
+
+## Add Variant
+
+<api>POST /api/products/{product}/variants</api>
+
+Add a new size variant to a product.
+
+### Path Parameters
+
+<ParamField path="product" type="string" required>
+  Product UUID
+</ParamField>
+
+### Request Body
+
+<ParamField body="size_id" type="string" required>
+  Size UUID (must exist in sizes table and not already exist for this product)
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status: `success`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Created variant object with size relationship loaded
+  
+  <ResponseField name="id" type="string">
+    Variant UUID
+  </ResponseField>
+  
+  <ResponseField name="product_id" type="string">
+    Product UUID
+  </ResponseField>
+  
+  <ResponseField name="size_id" type="string">
+    Size UUID
+  </ResponseField>
+  
+  <ResponseField name="size" type="object">
+    Size details (id, name, code)
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash Add Variant
+curl -X POST "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000/variants" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "size_id": "123e4567-e89b-12d3-a456-426614174010"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success Response (201)
+{
+  "status": "success",
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174050",
+    "product_id": "123e4567-e89b-12d3-a456-426614174000",
+    "size_id": "123e4567-e89b-12d3-a456-426614174010",
+    "size": {
+      "id": "123e4567-e89b-12d3-a456-426614174010",
+      "name": "Extra Large",
+      "code": "XL"
+    }
+  }
+}
+```
+
+```json Duplicate Variant (422)
+{
+  "status": "error",
+  "message": "This size variant already exists for this product"
+}
+```
+</ResponseExample>
+
+---
+
+## Update Variant
+
+<api>PUT /api/products/{product}/variants/{variant}</api>
+
+Update an existing product variant (change the size).
+
+### Path Parameters
+
+<ParamField path="product" type="string" required>
+  Product UUID
+</ParamField>
+
+<ParamField path="variant" type="string" required>
+  Variant UUID
+</ParamField>
+
+### Request Body
+
+<ParamField body="size_id" type="string" required>
+  New size UUID (must exist in sizes table and not conflict with other variants)
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status: `success`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Updated variant object with size relationship loaded
+</ResponseField>
+
+<RequestExample>
+```bash Update Variant
+curl -X PUT "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000/variants/123e4567-e89b-12d3-a456-426614174050" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "size_id": "123e4567-e89b-12d3-a456-426614174011"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174050",
+    "product_id": "123e4567-e89b-12d3-a456-426614174000",
+    "size_id": "123e4567-e89b-12d3-a456-426614174011",
+    "size": {
+      "id": "123e4567-e89b-12d3-a456-426614174011",
+      "name": "Small",
+      "code": "S"
+    }
+  }
+}
+```
+
+```json Variant Mismatch (404)
+{
+  "status": "error",
+  "message": "Variant does not belong to this product"
+}
+```
+
+```json Duplicate Size (422)
+{
+  "status": "error",
+  "message": "This size variant already exists for this product"
+}
+```
+</ResponseExample>
+
+---
+
+## Remove Variant
+
+<api>DELETE /api/products/{product}/variants/{variant}</api>
+
+Remove a size variant from a product.
+
+### Path Parameters
+
+<ParamField path="product" type="string" required>
+  Product UUID
+</ParamField>
+
+<ParamField path="variant" type="string" required>
+  Variant UUID to remove
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status: `success`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Confirmation message: `Variant removed successfully`
+</ResponseField>
+
+<RequestExample>
+```bash Remove Variant
+curl -X DELETE "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000/variants/123e4567-e89b-12d3-a456-426614174050" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Accept: application/json"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "message": "Variant removed successfully"
+}
+```
+
+```json Variant Mismatch (404)
+{
+  "status": "error",
+  "message": "Variant does not belong to this product"
+}
+```
+
+```json Not Found (404)
+{
+  "message": "No query results for model [App\\Models\\ProductVariant] 123e4567-e89b-12d3-a456-426614174999"
+}
+```
+</ResponseExample>

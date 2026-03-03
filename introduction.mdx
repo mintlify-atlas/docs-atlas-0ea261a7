@@ -1,0 +1,157 @@
+---
+title: "Introduction"
+description: "Welcome to Gran Camerino E-commerce API - A comprehensive RESTful API for sports jersey e-commerce"
+---
+
+## Welcome to Gran Camerino E-commerce API
+
+Gran Camerino is a powerful Laravel-based REST API built for managing a sports jersey e-commerce platform. The API provides everything you need to build a complete online store for sports apparel, from product catalog management to order processing and payment integration.
+
+<CardGroup cols={2}>
+  <Card
+    title="Quick start"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get up and running in 5 minutes with our quick start guide.
+  </Card>
+  
+  <Card
+    title="Installation"
+    icon="download"
+    href="/installation"
+  >
+    Complete installation and setup instructions.
+  </Card>
+  
+  <Card
+    title="Authentication"
+    icon="key"
+    href="/api/auth/register"
+  >
+    Learn how to authenticate users with JWT tokens.
+  </Card>
+  
+  <Card
+    title="Products API"
+    icon="shirt"
+    href="/api/products/list"
+  >
+    Explore the product catalog endpoints.
+  </Card>
+</CardGroup>
+
+## Key features
+
+Gran Camerino API offers a comprehensive set of features designed for modern e-commerce:
+
+<AccordionGroup>
+  <Accordion icon="shield-halved" title="JWT-based authentication">
+    Secure authentication system using JSON Web Tokens with role-based access control. Supports client and admin roles with token refresh capabilities.
+  </Accordion>
+  
+  <Accordion icon="box" title="Product catalog management">
+    Comprehensive product catalog with support for:
+    - Multiple product variants (sizes)
+    - Multiple images per product
+    - Dual currency pricing (USD and COP)
+    - Special categories and tags
+    - Team, league, and country associations
+    - Advanced filtering and search
+  </Accordion>
+  
+  <Accordion icon="credit-card" title="Multi-payment gateway support">
+    Integrated payment processing with:
+    - **Wompi**: Colombian payment gateway for credit/debit cards
+    - **NOWPayments**: Cryptocurrency payment processing
+    - Automatic webhook handling for payment status updates
+  </Accordion>
+  
+  <Accordion icon="receipt" title="Order management">
+    Full order lifecycle management including:
+    - Shopping cart to order conversion
+    - Payment status tracking
+    - Order history and details
+    - Coupon and discount application
+    - Shipping address management
+  </Accordion>
+  
+  <Accordion icon="image" title="Cloudinary image optimization">
+    Integrated Cloudinary service for:
+    - Image upload and storage
+    - Automatic optimization
+    - Responsive image delivery
+    - Image deletion and management
+  </Accordion>
+  
+  <Accordion icon="heart" title="Customer features">
+    Enhanced user experience with:
+    - Favorites/wishlist functionality
+    - Multiple shipping addresses
+    - Coupon validation and application
+    - Order tracking and history
+  </Accordion>
+  
+  <Accordion icon="crown" title="Admin capabilities">
+    Powerful admin dashboard features:
+    - User management and role assignment
+    - Bulk price updates across products
+    - Order status management
+    - Import products from WooCommerce
+    - Complete CRUD operations for catalog entities
+  </Accordion>
+</AccordionGroup>
+
+## API architecture
+
+The Gran Camerino API follows RESTful principles and is built with:
+
+- **Laravel 12**: Modern PHP framework for web applications
+- **PHP 8.2+**: Latest PHP features and performance improvements
+- **JWT Authentication**: Secure token-based authentication via `tymon/jwt-auth`
+- **Cloudinary**: Cloud-based image management
+- **SQLite/MySQL**: Flexible database support
+
+## What you can build
+
+With the Gran Camerino API, you can build:
+
+<CardGroup cols={2}>
+  <Card title="E-commerce storefront" icon="store">
+    Complete online store for sports jerseys with product browsing, search, and filtering.
+  </Card>
+  
+  <Card title="Mobile shopping app" icon="mobile">
+    iOS and Android apps with native shopping experiences.
+  </Card>
+  
+  <Card title="Admin dashboard" icon="chart-line">
+    Comprehensive admin panel for managing products, orders, and users.
+  </Card>
+  
+  <Card title="Marketplace integration" icon="handshake">
+    Connect to multiple sales channels and marketplaces.
+  </Card>
+</CardGroup>
+
+## Getting started
+
+Ready to dive in? Here's how to get started:
+
+<Steps>
+  <Step title="Install the API">
+    Follow our [installation guide](/installation) to set up the Laravel application locally or on your server.
+  </Step>
+  
+  <Step title="Try the quick start">
+    Test the API with our [quick start guide](/quickstart) to register a user and make your first API call.
+  </Step>
+  
+  <Step title="Explore the API reference">
+    Browse the complete [API reference](/api/auth/register) to see all available endpoints and their documentation.
+  </Step>
+</Steps>
+
+<Note>
+  The API supports both public endpoints (product browsing) and authenticated endpoints (orders, favorites). Most write operations require authentication.
+</Note>

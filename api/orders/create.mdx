@@ -1,0 +1,350 @@
+---
+title: "Create Order"
+api: "POST /api/orders"
+description: "Create a new order with payment gateway integration (Wompi or NOWPayments)"
+authMethod: "bearer"
+---
+
+## Authentication
+
+Requires authentication via Bearer token.
+
+## Request Body
+
+<ParamField body="address_id" type="string" required>
+  UUID of the shipping address
+</ParamField>
+
+<ParamField body="coupon_code" type="string">
+  Coupon code to apply discount (e.g., `WELCOME10`)
+</ParamField>
+
+<ParamField body="items" type="array" required>
+  Array of order items (minimum 1 item)
+
+  <Expandable title="Item Object">
+    <ParamField body="product_id" type="string" required>
+      Product UUID
+    </ParamField>
+
+    <ParamField body="product_variant_id" type="string" required>
+      Product variant UUID (size)
+    </ParamField>
+
+    <ParamField body="quantity" type="integer" required>
+      Quantity (minimum 1)
+    </ParamField>
+
+    <ParamField body="customization_name" type="string">
+      Player name for jersey customization (max 255 characters)
+    </ParamField>
+
+    <ParamField body="customization_number" type="string">
+      Jersey number for customization (max 50 characters)
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="payment_gateway" type="string" required>
+  Payment gateway: `wompi` (COP), `nowpayments` (USD crypto), or `paymentnow`
+</ParamField>
+
+<ParamField body="crypto_currency" type="string">
+  Cryptocurrency for NOWPayments (e.g., `btc`, `eth`, `usdt`). Required when using `nowpayments`.
+</ParamField>
+
+<ParamField body="redirect_url" type="string">
+  Custom redirect URL after payment. If not provided, uses default configuration. Note: Wompi sandbox only accepts `http://localhost` (not `https://localhost`).
+</ParamField>
+
+<ParamField body="notes" type="string">
+  Additional notes for the order
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status (`success`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Success message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Order and payment information
+
+  <Expandable title="Data Object">
+    <ResponseField name="order" type="object">
+      Order object with items, address, and coupon
+    </ResponseField>
+
+    <ResponseField name="payment_gateway" type="string">
+      Payment gateway used
+    </ResponseField>
+
+    <ResponseField name="payment_data" type="object">
+      Payment gateway-specific data
+      
+      **Wompi:**
+      - `reference`: Order reference
+      - `amount_in_cents`: Amount in cents (COP)
+      - `currency`: `COP`
+      - `signature`: Integrity signature
+      - `public_key`: Wompi public key
+      - `redirect_url`: Return URL after payment
+
+      **NOWPayments:**
+      - `invoice_id`: Invoice ID
+      - `invoice_url`: Payment page URL
+      - `order_id`: Order reference
+      - `price_amount`: Amount in USD
+      - `price_currency`: `usd`
+      - `pay_currency`: Cryptocurrency selected
+    </ResponseField>
+
+    <ResponseField name="payment_urls" type="object">
+      Payment URLs for the selected gateway
+      
+      **Wompi:**
+      - `checkout_url`: Direct checkout URL with pre-filled data
+      - `widget_script`: Wompi widget script URL
+
+      **NOWPayments:**
+      - `payment_url`: Invoice payment page
+      - `invoice_url`: Same as payment_url
+    </ResponseField>
+
+    <ResponseField name="order_id" type="string">
+      Order UUID
+    </ResponseField>
+
+    <ResponseField name="order_number" type="string">
+      Human-readable order number
+    </ResponseField>
+
+    <ResponseField name="total_amount" type="number">
+      Final total amount
+    </ResponseField>
+
+    <ResponseField name="checkout_url" type="string">
+      Direct checkout URL (same as `payment_urls.checkout_url` or `payment_urls.payment_url`)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="debug" type="object">
+  Debug information for Wompi signature verification (remove in production)
+</ResponseField>
+
+## Payment Flow
+
+### Wompi (Colombian Pesos - COP)
+
+1. Order is created with status `pending`
+2. Payment data is generated with integrity signature
+3. Client redirects user to `checkout_url` or uses Wompi widget
+4. User completes payment on Wompi
+5. Wompi webhook updates order status to `paid` or `failed`
+
+### NOWPayments (Cryptocurrency - USD)
+
+1. Order is created with status `pending`
+2. Invoice is created via NOWPayments API
+3. Client redirects user to `invoice_url`
+4. User selects cryptocurrency and completes payment
+5. NOWPayments webhook updates order status based on payment status:
+   - `finished` → `paid`
+   - `failed`, `expired`, `refunded` → `failed`
+   - `waiting`, `confirming`, `confirmed`, `sending` → `pending`
+
+<RequestExample>
+```bash Wompi Payment (COP)
+curl -X POST https://api.grancamerino.com/api/orders \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address_id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f43",
+    "coupon_code": "WELCOME10",
+    "items": [
+      {
+        "product_id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3d",
+        "product_variant_id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3e",
+        "quantity": 1,
+        "customization_name": "VINICIUS JR",
+        "customization_number": "7"
+      }
+    ],
+    "payment_gateway": "wompi",
+    "redirect_url": "https://grancamerino.com/order-confirmation",
+    "notes": "Please deliver after 6 PM"
+  }'
+```
+
+```bash NOWPayments (Crypto)
+curl -X POST https://api.grancamerino.com/api/orders \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address_id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f43",
+    "items": [
+      {
+        "product_id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3d",
+        "product_variant_id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3e",
+        "quantity": 2
+      }
+    ],
+    "payment_gateway": "nowpayments",
+    "crypto_currency": "btc"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Wompi Success
+{
+  "status": "success",
+  "message": "Order created successfully",
+  "data": {
+    "order": {
+      "id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+      "user_id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3b",
+      "order_number": "ORD-65F3A2B1C",
+      "subtotal": 350000,
+      "tax_amount": 0,
+      "shipping_amount": 0,
+      "discount_amount": 35000,
+      "total_amount": 315000,
+      "status": "pending",
+      "payment_gateway": "wompi",
+      "payment_reference": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+      "items": [
+        {
+          "product_name": "Real Madrid Home Jersey 2024",
+          "product_size": "L",
+          "unit_price": 350000,
+          "quantity": 1,
+          "total_price": 350000,
+          "customization_name": "VINICIUS JR",
+          "customization_number": "7"
+        }
+      ],
+      "address": {
+        "full_name": "Juan Pérez",
+        "street_address": "Calle 123 #45-67",
+        "city": "Bogotá"
+      },
+      "coupon": {
+        "code": "WELCOME10",
+        "type": "percentage",
+        "value": 10
+      }
+    },
+    "payment_gateway": "wompi",
+    "payment_data": {
+      "reference": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+      "amount_in_cents": 31500000,
+      "currency": "COP",
+      "signature": "8f3a2b1c5d4e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a",
+      "public_key": "pub_test_abc123xyz789",
+      "redirect_url": "https://grancamerino.com/order-confirmation/9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a"
+    },
+    "payment_urls": {
+      "checkout_url": "https://checkout.wompi.co/l?public-key=pub_test_abc123xyz789&currency=COP&amount-in-cents=31500000&reference=9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a&signature:integrity=8f3a2b1c5d4e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a&redirect-url=https://grancamerino.com/order-confirmation/9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+      "widget_script": "https://checkout.wompi.co/widget.js"
+    },
+    "order_id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+    "order_number": "ORD-65F3A2B1C",
+    "total_amount": 315000,
+    "checkout_url": "https://checkout.wompi.co/l?public-key=pub_test_abc123xyz789&currency=COP&amount-in-cents=31500000&reference=9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a&signature:integrity=8f3a2b1c5d4e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a&redirect-url=https://grancamerino.com/order-confirmation/9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a"
+  },
+  "debug": {
+    "signature_sent_to_wompi": "8f3a2b1c5d4e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a",
+    "reference": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+    "amount_in_cents": 31500000,
+    "currency": "COP"
+  }
+}
+```
+
+```json NOWPayments Success
+{
+  "status": "success",
+  "message": "Order created successfully",
+  "data": {
+    "order": {
+      "id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+      "order_number": "ORD-65F3A2B1C",
+      "total_amount": 89.99,
+      "status": "pending",
+      "payment_gateway": "paymentnow",
+      "payment_reference": "5847239561"
+    },
+    "payment_gateway": "nowpayments",
+    "payment_data": {
+      "invoice_id": "5847239561",
+      "invoice_url": "https://nowpayments.io/payment/?iid=5847239561",
+      "order_id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+      "order_description": "Order #ORD-65F3A2B1C",
+      "price_amount": 89.99,
+      "price_currency": "usd",
+      "pay_currency": "btc",
+      "created_at": "2024-01-15T14:25:00.000000Z"
+    },
+    "payment_urls": {
+      "payment_url": "https://nowpayments.io/payment/?iid=5847239561",
+      "invoice_url": "https://nowpayments.io/payment/?iid=5847239561"
+    },
+    "order_id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+    "order_number": "ORD-65F3A2B1C",
+    "total_amount": 89.99,
+    "checkout_url": "https://nowpayments.io/payment/?iid=5847239561"
+  }
+}
+```
+
+```json Invalid Coupon
+{
+  "status": "error",
+  "message": "Invalid or expired coupon"
+}
+```
+
+```json Payment Gateway Error
+{
+  "status": "error",
+  "message": "Failed to create crypto payment. Please check the logs or try again later.",
+  "debug": {
+    "api_key_configured": false,
+    "ipn_secret_configured": false,
+    "base_url": "https://api.nowpayments.io/v1",
+    "webhook_url": "https://api.grancamerino.com/webhooks/nowpayments"
+  }
+}
+```
+
+```json Validation Error
+{
+  "message": "The address id field is required. (and 1 more error)",
+  "errors": {
+    "address_id": [
+      "The address id field is required."
+    ],
+    "payment_gateway": [
+      "The selected payment gateway is invalid."
+    ]
+  }
+}
+```
+</ResponseExample>
+
+## Order Status Values
+
+- `pending`: Order created, awaiting payment
+- `paid`: Payment confirmed
+- `preparing`: Order being prepared for shipment
+- `shipped`: Order shipped
+- `in_transit`: Order in transit
+- `delivered`: Order delivered to customer
+- `cancelled`: Order cancelled
+- `failed`: Payment failed

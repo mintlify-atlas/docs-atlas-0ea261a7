@@ -1,80 +1,258 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quick start"
+description: "Get started with Gran Camerino API in 5 minutes"
 ---
 
-## Get started in three steps
+## Get up and running
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through making your first API calls to Gran Camerino. You'll register a user, authenticate, and retrieve products.
 
-### Step 1: Set up your local environment
+<Note>
+  This quick start assumes you have the API already installed and running. If not, see the [installation guide](/installation) first.
+</Note>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+## Prerequisites
 
-### Step 2: Deploy your changes
+Before you begin, make sure you have:
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+- The Gran Camerino API running (default: `http://localhost:8000`)
+- A tool to make HTTP requests (curl, Postman, or similar)
+- The API base URL (we'll use `http://localhost:8000/api` in examples)
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+## Make your first request
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+<Steps>
+  <Step title="Register a new user">
+    Create a new user account to get started. The API will return a JWT token for authentication.
 
-### Step 3: Go live
+    ```bash
+    curl -X POST http://localhost:8000/api/register \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "John Doe",
+        "email": "john@example.com",
+        "password": "password123"
+      }'
+    ```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    **Response:**
+    ```json
+    {
+      "message": "User registered successfully",
+      "user": {
+        "id": "9d3e8b1a-4f2c-4d5e-8a9b-1c2d3e4f5a6b",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "role": "client"
+      },
+      "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+      "token_type": "bearer",
+      "expires_in": 3600
+    }
+    ```
+
+    <Tip>
+      Save the `token` value - you'll need it for authenticated requests.
+    </Tip>
+  </Step>
+
+  <Step title="Browse products">
+    Retrieve the product catalog. This endpoint is public and doesn't require authentication.
+
+    ```bash
+    curl -X GET "http://localhost:8000/api/products?per_page=10" \
+      -H "Accept: application/json"
+    ```
+
+    **Response:**
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "current_page": 1,
+        "data": [
+          {
+            "id": "9d3e8b1a-4f2c-4d5e-8a9b-1c2d3e4f5a6b",
+            "name": "Real Madrid Home Jersey 2024",
+            "slug": "real-madrid-home-2024",
+            "price_usd": 89.99,
+            "price_cop": 350000,
+            "description": "Official Real Madrid home jersey",
+            "is_active": true,
+            "category": {
+              "id": "...",
+              "name": "Jerseys"
+            },
+            "team": {
+              "id": "...",
+              "name": "Real Madrid",
+              "country": {
+                "name": "Spain"
+              }
+            },
+            "images": [
+              {
+                "id": "...",
+                "url": "https://res.cloudinary.com/.../image.jpg",
+                "is_primary": true
+              }
+            ],
+            "variants": [
+              {
+                "id": "...",
+                "size": {
+                  "name": "M"
+                }
+              }
+            ]
+          }
+        ],
+        "per_page": 10,
+        "total": 150
+      }
+    }
+    ```
+
+    <Tip>
+      You can filter products by category, team, country, league, price range, and more. See the [Products API reference](/api/products/list) for all available filters.
+    </Tip>
+  </Step>
+
+  <Step title="Get product details">
+    Retrieve detailed information about a specific product.
+
+    ```bash
+    curl -X GET http://localhost:8000/api/products/{product_id} \
+      -H "Accept: application/json"
+    ```
+
+    Replace `{product_id}` with the actual product ID from the previous response.
+  </Step>
+
+  <Step title="Add a product to favorites">
+    Now let's use your authentication token to add a product to your favorites.
+
+    ```bash
+    curl -X POST http://localhost:8000/api/favorites \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+      -d '{
+        "product_id": "9d3e8b1a-4f2c-4d5e-8a9b-1c2d3e4f5a6b"
+      }'
+    ```
+
+    **Response:**
+    ```json
+    {
+      "status": "success",
+      "message": "Product added to favorites",
+      "data": {
+        "id": "...",
+        "product_id": "9d3e8b1a-4f2c-4d5e-8a9b-1c2d3e4f5a6b",
+        "user_id": "..."
+      }
+    }
+    ```
+
+    <Warning>
+      Don't forget to replace `YOUR_TOKEN_HERE` with the actual token from Step 1.
+    </Warning>
+  </Step>
+
+  <Step title="Create an order">
+    Place an order with the products you want to purchase.
+
+    ```bash
+    curl -X POST http://localhost:8000/api/orders \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+      -d '{
+        "items": [
+          {
+            "product_variant_id": "variant-uuid-here",
+            "quantity": 1,
+            "price_usd": 89.99,
+            "price_cop": 350000
+          }
+        ],
+        "address_id": "address-uuid-here",
+        "payment_method": "wompi",
+        "currency": "cop",
+        "total_usd": 89.99,
+        "total_cop": 350000
+      }'
+    ```
+
+    The API will create the order and return payment information including a checkout URL.
+  </Step>
+</Steps>
+
+## Common use cases
+
+Now that you've made your first requests, explore these common scenarios:
+
+<CardGroup cols={2}>
+  <Card title="Search products" icon="magnifying-glass" href="/api/products/list">
+    Filter products by team, league, category, price range, and search terms.
+  </Card>
+  
+  <Card title="Manage addresses" icon="location-dot" href="/api/user/addresses">
+    Add and manage shipping addresses for your account.
+  </Card>
+  
+  <Card title="Apply coupons" icon="ticket" href="/api/user/coupons">
+    Validate and apply discount coupons to orders.
+  </Card>
+  
+  <Card title="Track orders" icon="box-check" href="/api/orders/get">
+    View order history and check payment status.
+  </Card>
+</CardGroup>
+
+## Authentication flow
+
+Understand how authentication works in the API:
+
+<Steps>
+  <Step title="Register or login">
+    Use `/api/register` to create a new account or `/api/login` to authenticate an existing user.
+  </Step>
+  
+  <Step title="Include token in requests">
+    Add the JWT token to the `Authorization` header as `Bearer YOUR_TOKEN`.
+  </Step>
+  
+  <Step title="Refresh when needed">
+    Use `/api/refresh` to get a new token before the current one expires (default: 60 minutes).
+  </Step>
+  
+  <Step title="Logout">
+    Call `/api/logout` to invalidate the token when done.
+  </Step>
+</Steps>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+You're now ready to explore the full API capabilities:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="API Reference" icon="book" href="/api/auth/register">
+    Complete documentation for all API endpoints.
+  </Card>
+  
+  <Card title="Authentication" icon="key" href="/concepts/authentication">
+    Deep dive into authentication and authorization.
+  </Card>
+  
+  <Card title="Payment Processing" icon="credit-card" href="/concepts/payment-processing">
+    Learn how to handle payments with Wompi and NOWPayments.
+  </Card>
+  
+  <Card title="Product Management" icon="box" href="/guides/product-management">
+    Complete guide to managing products and variants.
+  </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  All authenticated endpoints return a `401 Unauthorized` error if the token is missing or invalid.
 </Note>

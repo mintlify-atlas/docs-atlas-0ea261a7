@@ -1,0 +1,656 @@
+---
+title: "Coupons"
+description: "Manage discount coupons and validate coupon codes"
+---
+
+## Overview
+
+The Coupons API provides functionality for managing promotional discount coupons. Users can list active coupons and validate coupon codes before checkout. Administrators can create, update, and delete coupons.
+
+Coupons support two discount types:
+- **Percentage**: Discount based on percentage of order total (e.g., 20% off)
+- **Fixed**: Fixed amount discount (e.g., $10 off)
+
+**Authentication:** 
+- List, view, and validate endpoints: Available to all authenticated users
+- Create, update, delete endpoints: Admin access required
+
+---
+
+## List Active Coupons
+
+<api method="GET" path="/api/coupons" auth="required">
+Get all active, non-expired coupons. Returns only coupons that are currently valid and usable.
+</api>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="array">
+Array of coupon objects
+  <Expandable title="Coupon object">
+    <ResponseField name="id" type="string">UUID of the coupon</ResponseField>
+    <ResponseField name="code" type="string">Unique coupon code (uppercase)</ResponseField>
+    <ResponseField name="name" type="string">Display name of the coupon</ResponseField>
+    <ResponseField name="description" type="string | null">Optional description</ResponseField>
+    <ResponseField name="type" type="string">Discount type: "percentage" or "fixed"</ResponseField>
+    <ResponseField name="value" type="number">Discount value (percentage or fixed amount)</ResponseField>
+    <ResponseField name="minimum_amount" type="number | null">Minimum order amount required</ResponseField>
+    <ResponseField name="usage_limit" type="number | null">Maximum number of times coupon can be used</ResponseField>
+    <ResponseField name="used_count" type="number">Number of times coupon has been used</ResponseField>
+    <ResponseField name="starts_at" type="string | null">Start date (ISO 8601)</ResponseField>
+    <ResponseField name="expires_at" type="string | null">Expiration date (ISO 8601)</ResponseField>
+    <ResponseField name="is_active" type="boolean">Whether coupon is active</ResponseField>
+    <ResponseField name="created_at" type="string">ISO 8601 timestamp</ResponseField>
+    <ResponseField name="updated_at" type="string">ISO 8601 timestamp</ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET https://api.grancamerino.com/api/coupons \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a",
+      "code": "SUMMER2024",
+      "name": "Summer Sale 2024",
+      "description": "20% off on all jerseys this summer",
+      "type": "percentage",
+      "value": 20.00,
+      "minimum_amount": 50.00,
+      "usage_limit": 1000,
+      "used_count": 245,
+      "starts_at": "2024-06-01T00:00:00.000000Z",
+      "expires_at": "2024-08-31T23:59:59.000000Z",
+      "is_active": true,
+      "created_at": "2024-05-15T10:00:00.000000Z",
+      "updated_at": "2024-05-15T10:00:00.000000Z"
+    },
+    {
+      "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f7a",
+      "code": "WELCOME10",
+      "name": "Welcome Discount",
+      "description": "$10 off your first order",
+      "type": "fixed",
+      "value": 10.00,
+      "minimum_amount": 30.00,
+      "usage_limit": null,
+      "used_count": 1523,
+      "starts_at": null,
+      "expires_at": null,
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00.000000Z",
+      "updated_at": "2024-01-01T00:00:00.000000Z"
+    }
+  ]
+}
+```
+
+---
+
+## Get Coupon
+
+<api method="GET" path="/api/coupons/{id}" auth="required">
+Get details of a specific coupon by ID.
+</api>
+
+### Path Parameters
+
+<ParamField name="id" type="string" required>
+UUID of the coupon
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+The coupon object
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET https://api.grancamerino.com/api/coupons/9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a",
+    "code": "SUMMER2024",
+    "name": "Summer Sale 2024",
+    "description": "20% off on all jerseys this summer",
+    "type": "percentage",
+    "value": 20.00,
+    "minimum_amount": 50.00,
+    "usage_limit": 1000,
+    "used_count": 245,
+    "starts_at": "2024-06-01T00:00:00.000000Z",
+    "expires_at": "2024-08-31T23:59:59.000000Z",
+    "is_active": true,
+    "created_at": "2024-05-15T10:00:00.000000Z",
+    "updated_at": "2024-05-15T10:00:00.000000Z"
+  }
+}
+```
+
+---
+
+## Validate Coupon
+
+<api method="POST" path="/api/coupons/validate" auth="required">
+Validate a coupon code and calculate the discount for a given order amount. This endpoint checks all validation rules and returns the discount details.
+</api>
+
+### Request Body
+
+<ParamField name="code" type="string" required>
+The coupon code to validate (case-insensitive)
+</ParamField>
+
+<ParamField name="amount" type="number" required>
+The order total amount to apply the coupon to (must be >= 0)
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success" or "error")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+Validation result message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+Discount calculation details (only on success)
+  <Expandable title="Validation data">
+    <ResponseField name="coupon" type="object">The coupon object</ResponseField>
+    <ResponseField name="discount_amount" type="number">Calculated discount amount</ResponseField>
+    <ResponseField name="final_amount" type="number">Order total after discount (minimum 0)</ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Validation Rules
+
+A coupon is considered valid only if ALL of the following conditions are met:
+
+1. Coupon code exists in the database
+2. `is_active` is true
+3. `starts_at` is null or in the past
+4. `expires_at` is null or in the future
+5. `usage_limit` is null or `used_count < usage_limit`
+6. Order amount meets `minimum_amount` requirement (if set)
+
+### Discount Calculation
+
+- **Percentage coupons**: `discount = amount * (value / 100)`
+- **Fixed coupons**: `discount = min(value, amount)` (never exceeds order total)
+- If order amount is below `minimum_amount`, discount is 0
+
+### Example Request (Valid Coupon)
+
+```bash
+curl -X POST https://api.grancamerino.com/api/coupons/validate \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "code": "SUMMER2024",
+    "amount": 100.00
+  }'
+```
+
+### Example Response (Valid)
+
+```json
+{
+  "status": "success",
+  "message": "Coupon is valid",
+  "data": {
+    "coupon": {
+      "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a",
+      "code": "SUMMER2024",
+      "name": "Summer Sale 2024",
+      "description": "20% off on all jerseys this summer",
+      "type": "percentage",
+      "value": 20.00,
+      "minimum_amount": 50.00,
+      "usage_limit": 1000,
+      "used_count": 245,
+      "starts_at": "2024-06-01T00:00:00.000000Z",
+      "expires_at": "2024-08-31T23:59:59.000000Z",
+      "is_active": true,
+      "created_at": "2024-05-15T10:00:00.000000Z",
+      "updated_at": "2024-05-15T10:00:00.000000Z"
+    },
+    "discount_amount": 20.00,
+    "final_amount": 80.00
+  }
+}
+```
+
+### Example Request (Fixed Coupon)
+
+```bash
+curl -X POST https://api.grancamerino.com/api/coupons/validate \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "code": "WELCOME10",
+    "amount": 45.00
+  }'
+```
+
+### Example Response (Fixed Discount)
+
+```json
+{
+  "status": "success",
+  "message": "Coupon is valid",
+  "data": {
+    "coupon": {
+      "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f7a",
+      "code": "WELCOME10",
+      "name": "Welcome Discount",
+      "description": "$10 off your first order",
+      "type": "fixed",
+      "value": 10.00,
+      "minimum_amount": 30.00,
+      "usage_limit": null,
+      "used_count": 1523,
+      "starts_at": null,
+      "expires_at": null,
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00.000000Z",
+      "updated_at": "2024-01-01T00:00:00.000000Z"
+    },
+    "discount_amount": 10.00,
+    "final_amount": 35.00
+  }
+}
+```
+
+### Error Response (Invalid Code)
+
+```json
+{
+  "status": "error",
+  "message": "Invalid coupon code"
+}
+```
+
+### Error Response (Expired)
+
+```json
+{
+  "status": "error",
+  "message": "Coupon has expired"
+}
+```
+
+### Error Response (Inactive)
+
+```json
+{
+  "status": "error",
+  "message": "Coupon is inactive"
+}
+```
+
+### Error Response (Not Yet Active)
+
+```json
+{
+  "status": "error",
+  "message": "Coupon not yet active"
+}
+```
+
+### Error Response (Usage Limit Reached)
+
+```json
+{
+  "status": "error",
+  "message": "Coupon usage limit reached"
+}
+```
+
+---
+
+## Create Coupon
+
+<api method="POST" path="/api/coupons" auth="admin">
+Create a new coupon. Requires admin authentication.
+</api>
+
+### Request Body
+
+<ParamField name="code" type="string" required>
+Unique coupon code (will be converted to uppercase). Must be unique across all coupons.
+</ParamField>
+
+<ParamField name="name" type="string" required>
+Display name of the coupon (max 255 characters)
+</ParamField>
+
+<ParamField name="description" type="string">
+Optional description of the coupon
+</ParamField>
+
+<ParamField name="type" type="string" required>
+Discount type. Must be one of: `percentage`, `fixed`
+</ParamField>
+
+<ParamField name="value" type="number" required>
+Discount value (must be >= 0)
+- For percentage: value between 0-100
+- For fixed: amount in dollars
+</ParamField>
+
+<ParamField name="minimum_amount" type="number">
+Minimum order amount required to use coupon (must be >= 0)
+</ParamField>
+
+<ParamField name="usage_limit" type="integer">
+Maximum number of times the coupon can be used (must be >= 1)
+</ParamField>
+
+<ParamField name="starts_at" type="string">
+Start date and time (ISO 8601 format)
+</ParamField>
+
+<ParamField name="expires_at" type="string">
+Expiration date and time (ISO 8601 format). Must be after `starts_at` if both are provided.
+</ParamField>
+
+<ParamField name="is_active" type="boolean" default="true">
+Whether the coupon is active
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+Success message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+The created coupon object
+</ResponseField>
+
+### Example Request (Percentage Coupon)
+
+```bash
+curl -X POST https://api.grancamerino.com/api/coupons \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "code": "BLACKFRIDAY2024",
+    "name": "Black Friday Sale",
+    "description": "Massive 30% discount for Black Friday",
+    "type": "percentage",
+    "value": 30,
+    "minimum_amount": 75.00,
+    "usage_limit": 500,
+    "starts_at": "2024-11-29T00:00:00Z",
+    "expires_at": "2024-11-30T23:59:59Z",
+    "is_active": true
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "message": "Coupon created successfully",
+  "data": {
+    "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f8a",
+    "code": "BLACKFRIDAY2024",
+    "name": "Black Friday Sale",
+    "description": "Massive 30% discount for Black Friday",
+    "type": "percentage",
+    "value": 30.00,
+    "minimum_amount": 75.00,
+    "usage_limit": 500,
+    "used_count": 0,
+    "starts_at": "2024-11-29T00:00:00.000000Z",
+    "expires_at": "2024-11-30T23:59:59.000000Z",
+    "is_active": true,
+    "created_at": "2024-01-20T10:00:00.000000Z",
+    "updated_at": "2024-01-20T10:00:00.000000Z"
+  }
+}
+```
+
+### Example Request (Fixed Coupon)
+
+```bash
+curl -X POST https://api.grancamerino.com/api/coupons \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "code": "FREESHIP",
+    "name": "Free Shipping",
+    "description": "$15 off - covers standard shipping",
+    "type": "fixed",
+    "value": 15.00,
+    "minimum_amount": 50.00,
+    "is_active": true
+  }'
+```
+
+---
+
+## Update Coupon
+
+<api method="PUT" path="/api/coupons/{id}" auth="admin">
+Update an existing coupon. All fields are optional. Requires admin authentication.
+</api>
+
+### Path Parameters
+
+<ParamField name="id" type="string" required>
+UUID of the coupon to update
+</ParamField>
+
+### Request Body
+
+<ParamField name="name" type="string">
+Display name of the coupon (max 255 characters)
+</ParamField>
+
+<ParamField name="description" type="string">
+Description of the coupon
+</ParamField>
+
+<ParamField name="type" type="string">
+Discount type: `percentage` or `fixed`
+</ParamField>
+
+<ParamField name="value" type="number">
+Discount value (must be >= 0)
+</ParamField>
+
+<ParamField name="minimum_amount" type="number">
+Minimum order amount (must be >= 0)
+</ParamField>
+
+<ParamField name="usage_limit" type="integer">
+Maximum uses (must be >= 1)
+</ParamField>
+
+<ParamField name="starts_at" type="string">
+Start date (ISO 8601)
+</ParamField>
+
+<ParamField name="expires_at" type="string">
+Expiration date (ISO 8601, must be after starts_at)
+</ParamField>
+
+<ParamField name="is_active" type="boolean">
+Active status
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+Success message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+The updated coupon object
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X PUT https://api.grancamerino.com/api/coupons/9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "value": 25,
+    "usage_limit": 2000,
+    "expires_at": "2024-09-30T23:59:59Z"
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "message": "Coupon updated successfully",
+  "data": {
+    "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a",
+    "code": "SUMMER2024",
+    "name": "Summer Sale 2024",
+    "description": "20% off on all jerseys this summer",
+    "type": "percentage",
+    "value": 25.00,
+    "minimum_amount": 50.00,
+    "usage_limit": 2000,
+    "used_count": 245,
+    "starts_at": "2024-06-01T00:00:00.000000Z",
+    "expires_at": "2024-09-30T23:59:59.000000Z",
+    "is_active": true,
+    "created_at": "2024-05-15T10:00:00.000000Z",
+    "updated_at": "2024-01-20T11:30:00.000000Z"
+  }
+}
+```
+
+---
+
+## Delete Coupon
+
+<api method="DELETE" path="/api/coupons/{id}" auth="admin">
+Delete a coupon. Requires admin authentication.
+</api>
+
+### Path Parameters
+
+<ParamField name="id" type="string" required>
+UUID of the coupon to delete
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+Success message
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X DELETE https://api.grancamerino.com/api/coupons/9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f8a \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Accept: application/json"
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "message": "Coupon deleted successfully"
+}
+```
+
+---
+
+## Coupon Types Explained
+
+### Percentage Coupons
+
+Percentage coupons apply a percentage discount to the order total:
+
+- **Value**: Represents the percentage (0-100)
+- **Example**: value = 20 means 20% off
+- **Calculation**: `discount = amount * (value / 100)`
+- **Use case**: General sales, category-specific promotions
+
+```json
+{
+  "code": "SUMMER20",
+  "type": "percentage",
+  "value": 20.00
+}
+// Order $100 → Discount $20 → Final $80
+```
+
+### Fixed Amount Coupons
+
+Fixed coupons apply a specific dollar amount discount:
+
+- **Value**: Represents the fixed discount amount
+- **Example**: value = 10 means $10 off
+- **Calculation**: `discount = min(value, amount)`
+- **Use case**: Free shipping, welcome bonuses, referral credits
+
+```json
+{
+  "code": "SAVE15",
+  "type": "fixed",
+  "value": 15.00
+}
+// Order $100 → Discount $15 → Final $85
+// Order $10 → Discount $10 → Final $0 (capped at order total)
+```

@@ -1,0 +1,375 @@
+---
+title: "Payment Operations"
+description: "Payment-related endpoints for order checkout, payment confirmation, and crypto payments"
+---
+
+## Get Order Checkout URL
+
+<api>
+  GET /api/orders/{order}/checkout-url
+</api>
+
+Retrieve the Wompi checkout URL for an order (for debugging or re-accessing payment page).
+
+### Authentication
+
+Requires authentication. Users can only access their own orders.
+
+### Path Parameters
+
+<ParamField path="order" type="string" required>
+  Order UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  <Expandable title="Data Object">
+    <ResponseField name="order_id" type="string">Order UUID</ResponseField>
+    <ResponseField name="order_number" type="string">Order number</ResponseField>
+    <ResponseField name="checkout_url" type="string">Wompi checkout URL</ResponseField>
+    <ResponseField name="payment_data" type="object">Payment data with signature</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X GET https://api.grancamerino.com/api/orders/9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a/checkout-url \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success
+{
+  "status": "success",
+  "data": {
+    "order_id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+    "order_number": "ORD-65F3A2B1C",
+    "checkout_url": "https://checkout.wompi.co/l?public-key=pub_test_abc123&currency=COP&amount-in-cents=31500000&reference=9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a&signature:integrity=8f3a2b1c5d4e6f7a&redirect-url=https://grancamerino.com/order-confirmation/9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+    "payment_data": {
+      "reference": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+      "amount_in_cents": 31500000,
+      "currency": "COP",
+      "signature": "8f3a2b1c5d4e6f7a8b9c0d1e2f3a4b5c",
+      "public_key": "pub_test_abc123"
+    }
+  }
+}
+```
+
+```json Wrong Gateway
+{
+  "status": "error",
+  "message": "This endpoint is only for Wompi orders"
+}
+```
+</ResponseExample>
+
+---
+
+## Check Payment Status
+
+<api>
+  GET /api/orders/{order}/payment-status
+</api>
+
+Manually check the payment status from the payment gateway.
+
+### Authentication
+
+Requires authentication. Users can only check their own orders.
+
+### Path Parameters
+
+<ParamField path="order" type="string" required>
+  Order UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  <Expandable title="Data Object">
+    <ResponseField name="order_status" type="string">Current order status</ResponseField>
+    <ResponseField name="payment_status" type="object">Payment status from gateway</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X GET https://api.grancamerino.com/api/orders/9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a/payment-status \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Wompi Order
+{
+  "status": "success",
+  "data": {
+    "order_status": "paid",
+    "payment_status": {
+      "id": "12345-67890",
+      "status": "APPROVED",
+      "amount_in_cents": 31500000,
+      "currency": "COP",
+      "payment_method_type": "CARD",
+      "reference": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a"
+    }
+  }
+}
+```
+
+```json NOWPayments Order
+{
+  "status": "success",
+  "data": {
+    "order_status": "paid",
+    "payment_status": {
+      "payment_id": "5847239561",
+      "payment_status": "finished",
+      "pay_amount": 0.00105432,
+      "pay_currency": "btc",
+      "price_amount": 89.99,
+      "price_currency": "usd"
+    }
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Get Crypto Currencies
+
+<api>
+  GET /api/crypto-currencies
+</api>
+
+Get available cryptocurrencies for NOWPayments.
+
+### Authentication
+
+No authentication required.
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Object containing available currencies
+
+  <Expandable title="Currencies Object">
+    <ResponseField name="currencies" type="array">
+      Array of currency codes (e.g., `["btc", "eth", "usdt", "ltc", ...]`)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl https://api.grancamerino.com/api/crypto-currencies
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success
+{
+  "status": "success",
+  "data": {
+    "currencies": [
+      "btc",
+      "eth",
+      "usdt",
+      "usdttrc20",
+      "ltc",
+      "bch",
+      "bnbbsc",
+      "matic",
+      "trx",
+      "doge",
+      "xrp",
+      "ada",
+      "sol"
+    ]
+  }
+}
+```
+
+```json Error
+{
+  "status": "error",
+  "message": "Failed to fetch crypto currencies"
+}
+```
+</ResponseExample>
+
+---
+
+## Get Crypto Estimate
+
+<api>
+  POST /api/crypto-estimate
+</api>
+
+Get estimated cryptocurrency amount for a USD price.
+
+### Authentication
+
+No authentication required.
+
+### Request Body
+
+<ParamField body="amount" type="number" required>
+  Amount in USD (minimum 0.01)
+</ParamField>
+
+<ParamField body="currency" type="string" required>
+  Cryptocurrency code (e.g., `btc`, `eth`, `usdt`)
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  <Expandable title="Estimate Data">
+    <ResponseField name="currency_from" type="string">Source currency (usd)</ResponseField>
+    <ResponseField name="amount_from" type="number">Amount in USD</ResponseField>
+    <ResponseField name="currency_to" type="string">Target cryptocurrency</ResponseField>
+    <ResponseField name="estimated_amount" type="number">Estimated amount in crypto</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST https://api.grancamerino.com/api/crypto-estimate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 89.99,
+    "currency": "btc"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success
+{
+  "status": "success",
+  "data": {
+    "currency_from": "usd",
+    "amount_from": 89.99,
+    "currency_to": "btc",
+    "estimated_amount": 0.00105432
+  }
+}
+```
+
+```json Error
+{
+  "status": "error",
+  "message": "Failed to get estimate"
+}
+```
+</ResponseExample>
+
+---
+
+## Confirm Payment (Manual)
+
+<api>
+  POST /api/orders/{order}/confirm-payment
+</api>
+
+Manually confirm payment for an order (typically called by frontend after redirect from payment gateway).
+
+<Warning>
+This endpoint is deprecated. Payment confirmation should be handled automatically via webhooks. Only use this for testing or fallback scenarios.
+</Warning>
+
+### Authentication
+
+No authentication required (public endpoint).
+
+### Path Parameters
+
+<ParamField path="order" type="string" required>
+  Order UUID
+</ParamField>
+
+### Request Body
+
+<ParamField body="transaction_id" type="string" required>
+  Transaction ID from payment gateway
+</ParamField>
+
+<ParamField body="status" type="string" required>
+  Payment status (e.g., `APPROVED`, `DECLINED`)
+</ParamField>
+
+<ParamField body="payment_gateway" type="string" required>
+  Payment gateway used
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Status message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Updated order object
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST https://api.grancamerino.com/api/orders/9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a/confirm-payment \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transaction_id": "12345-67890",
+    "status": "APPROVED",
+    "payment_gateway": "wompi"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Approved
+{
+  "status": "success",
+  "message": "Payment confirmed",
+  "data": {
+    "id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+    "status": "paid",
+    "payment_data": {
+      "transaction_id": "12345-67890",
+      "gateway": "wompi"
+    },
+    "paid_at": "2024-01-15T14:30:00Z"
+  }
+}
+```
+
+```json Failed
+{
+  "status": "error",
+  "message": "Payment failed"
+}
+```
+</ResponseExample>

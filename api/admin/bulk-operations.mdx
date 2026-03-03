@@ -1,0 +1,193 @@
+---
+title: Bulk operations
+description: Admin endpoints for performing bulk operations on products and users
+---
+
+<Warning>All endpoints on this page require admin authentication.</Warning>
+
+## Bulk price update
+
+### POST /api/products/bulk-price-update
+
+Update prices for multiple products at once.
+
+#### Request parameters
+
+<ParamField body="product_ids" type="array" required>
+  Array of product IDs to update
+</ParamField>
+
+<ParamField body="price_cop" type="number">
+  New price in Colombian Pesos (COP)
+</ParamField>
+
+<ParamField body="price_usd" type="number">
+  New price in US Dollars (USD)
+</ParamField>
+
+<ParamField body="percentage_increase" type="number">
+  Percentage to increase current prices by (e.g., 10 for 10% increase)
+</ParamField>
+
+<ParamField body="percentage_decrease" type="number">
+  Percentage to decrease current prices by (e.g., 15 for 15% decrease)
+</ParamField>
+
+<Note>
+  You must provide either:
+  - Specific prices (`price_cop` and/or `price_usd`), OR
+  - A percentage change (`percentage_increase` or `percentage_decrease`)
+</Note>
+
+## Example: Set fixed prices
+
+```bash
+curl -X POST https://api.grancamerino.com/api/products/bulk-price-update \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "product_ids": [
+      "9d3c5e7f-1234-5678-9abc-def012345678",
+      "9d3c5e7f-5678-1234-9abc-def012345679"
+    ],
+    "price_cop": 250000,
+    "price_usd": 65.00
+  }'
+```
+
+## Example: Apply percentage increase
+
+```bash
+curl -X POST https://api.grancamerino.com/api/products/bulk-price-update \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "product_ids": [
+      "9d3c5e7f-1234-5678-9abc-def012345678",
+      "9d3c5e7f-5678-1234-9abc-def012345679"
+    ],
+    "percentage_increase": 10
+  }'
+```
+
+### Response
+
+```json
+{
+  "status": "success",
+  "message": "2 products updated successfully",
+  "data": {
+    "updated_count": 2,
+    "product_ids": [
+      "9d3c5e7f-1234-5678-9abc-def012345678",
+      "9d3c5e7f-5678-1234-9abc-def012345679"
+    ]
+  }
+}
+```
+
+---
+
+## Bulk delete users
+
+### POST /api/users/bulk-delete
+
+Delete multiple users at once.
+
+<Warning>
+  - You cannot delete your own account in a bulk operation
+  - The API will automatically skip your account if included in the list
+  - This operation is permanent and cannot be undone
+</Warning>
+
+#### Request parameters
+
+<ParamField body="user_ids" type="array" required>
+  Array of user UUIDs to delete. Minimum 1 user.
+</ParamField>
+
+## Example
+
+```bash
+curl -X POST https://api.grancamerino.com/api/users/bulk-delete \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_ids": [
+      "9d3c5e7f-1234-5678-9abc-def012345678",
+      "9d3c5e7f-5678-1234-9abc-def012345679",
+      "9d3c5e7f-9abc-1234-5678-def012345680"
+    ]
+  }'
+```
+
+### Response
+
+```json
+{
+  "status": "success",
+  "message": "2 users deleted successfully",
+  "data": {
+    "deleted_count": 2,
+    "requested_count": 3,
+    "skipped_count": 1
+  }
+}
+```
+
+<ResponseField name="deleted_count" type="integer">
+  Number of users successfully deleted
+</ResponseField>
+
+<ResponseField name="requested_count" type="integer">
+  Total number of user IDs provided in the request
+</ResponseField>
+
+<ResponseField name="skipped_count" type="integer">
+  Number of users skipped (e.g., your own account)
+</ResponseField>
+
+## Error responses
+
+### Validation error (422)
+
+```json
+{
+  "status": "error",
+  "message": "Validation failed",
+  "errors": {
+    "user_ids": [
+      "The user ids field is required."
+    ],
+    "user_ids.0": [
+      "The selected user ids.0 is invalid."
+    ]
+  }
+}
+```
+
+### Cannot delete own account (403)
+
+```json
+{
+  "status": "error",
+  "message": "Cannot delete your own account"
+}
+```
+
+## Best practices
+
+<CardGroup cols={2}>
+  <Card title="Verify before deleting" icon="triangle-exclamation">
+    Double-check user IDs before bulk deletion. This operation cannot be undone.
+  </Card>
+  <Card title="Use pagination" icon="list">
+    For large operations, consider processing in batches to avoid timeouts.
+  </Card>
+  <Card title="Check response" icon="check">
+    Always verify the `deleted_count` matches your expectations.
+  </Card>
+  <Card title="Audit logs" icon="clock-rotate-left">
+    Keep records of bulk operations for compliance and recovery.
+  </Card>
+</CardGroup>

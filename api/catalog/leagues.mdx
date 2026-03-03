@@ -1,0 +1,357 @@
+---
+title: 'Leagues'
+description: 'Manage football leagues and competitions'
+---
+
+<Note>
+  **Public Access:** GET endpoints are publicly accessible
+  
+  **Admin Only:** POST, PUT, DELETE require authentication and admin privileges
+</Note>
+
+## List All Leagues
+
+<api method="GET" url="https://api.grancamerino.com/api/leagues" />
+
+Retrieve all leagues with their associated country data.
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of league objects
+  
+  <Expandable title="League Object">
+    <ResponseField name="id" type="string">
+      UUID of the league
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      League name (e.g., "La Liga", "Premier League")
+    </ResponseField>
+    
+    <ResponseField name="country_id" type="string">
+      UUID of the associated country
+    </ResponseField>
+    
+    <ResponseField name="image_url" type="string" optional>
+      URL to league logo
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp
+    </ResponseField>
+    
+    <ResponseField name="updated_at" type="string">
+      ISO 8601 timestamp
+    </ResponseField>
+    
+    <ResponseField name="country" type="object">
+      Related country object
+      
+      <Expandable title="Country Object">
+        <ResponseField name="id" type="string">
+          Country UUID
+        </ResponseField>
+        <ResponseField name="name" type="string">
+          Country name
+        </ResponseField>
+        <ResponseField name="continent_id" type="string">
+          Continent UUID
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl https://api.grancamerino.com/api/leagues
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201",
+      "name": "La Liga",
+      "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+      "image_url": "https://cdn.grancamerino.com/leagues/laliga.png",
+      "created_at": "2024-01-15T10:20:00.000000Z",
+      "updated_at": "2024-01-15T10:20:00.000000Z",
+      "country": {
+        "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+        "name": "Spain",
+        "continent_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b501"
+      }
+    },
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b202",
+      "name": "Premier League",
+      "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b404",
+      "image_url": "https://cdn.grancamerino.com/leagues/premier-league.png",
+      "created_at": "2024-01-15T10:21:00.000000Z",
+      "updated_at": "2024-01-15T10:21:00.000000Z",
+      "country": {
+        "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b404",
+        "name": "England",
+        "continent_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b501"
+      }
+    }
+  ]
+}
+```
+</ResponseExample>
+
+---
+
+## Get Single League
+
+<api method="GET" url="https://api.grancamerino.com/api/leagues/{id}" />
+
+Retrieve a specific league by ID with country data.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  League UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  League object with country relationship (same structure as list endpoint)
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl https://api.grancamerino.com/api/leagues/9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": {
+    "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201",
+    "name": "La Liga",
+    "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+    "image_url": "https://cdn.grancamerino.com/leagues/laliga.png",
+    "created_at": "2024-01-15T10:20:00.000000Z",
+    "updated_at": "2024-01-15T10:20:00.000000Z",
+    "country": {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+      "name": "Spain",
+      "continent_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b501"
+    }
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Create League
+
+<api method="POST" url="https://api.grancamerino.com/api/leagues" auth="Bearer" />
+
+<Note type="warning">
+  **Admin Only** - Requires authentication with admin privileges
+</Note>
+
+Create a new league.
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with admin privileges
+</ParamField>
+
+### Body Parameters
+
+<ParamField body="name" type="string" required>
+  League name (max 255 characters)
+</ParamField>
+
+<ParamField body="country_id" type="string" required>
+  UUID of the country where the league is located
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Created league object with country relationship
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST https://api.grancamerino.com/api/leagues \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Serie A",
+    "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b405"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": {
+    "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b203",
+    "name": "Serie A",
+    "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b405",
+    "created_at": "2024-03-03T14:40:00.000000Z",
+    "updated_at": "2024-03-03T14:40:00.000000Z",
+    "country": {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b405",
+      "name": "Italy",
+      "continent_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b501"
+    }
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Update League
+
+<api method="PUT" url="https://api.grancamerino.com/api/leagues/{id}" auth="Bearer" />
+
+<Note type="warning">
+  **Admin Only** - Requires authentication with admin privileges
+</Note>
+
+Update an existing league.
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with admin privileges
+</ParamField>
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  League UUID
+</ParamField>
+
+### Body Parameters
+
+<ParamField body="name" type="string" required>
+  League name (max 255 characters)
+</ParamField>
+
+<ParamField body="country_id" type="string" required>
+  UUID of the country where the league is located
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Updated league object with country relationship
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X PUT https://api.grancamerino.com/api/leagues/9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b203 \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Serie A TIM",
+    "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b405"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": {
+    "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b203",
+    "name": "Serie A TIM",
+    "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b405",
+    "created_at": "2024-03-03T14:40:00.000000Z",
+    "updated_at": "2024-03-03T14:45:00.000000Z",
+    "country": {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b405",
+      "name": "Italy",
+      "continent_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b501"
+    }
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Delete League
+
+<api method="DELETE" url="https://api.grancamerino.com/api/leagues/{id}" auth="Bearer" />
+
+<Note type="warning">
+  **Admin Only** - Requires authentication with admin privileges
+</Note>
+
+Delete a league from the system.
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with admin privileges
+</ParamField>
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  League UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Confirmation message
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X DELETE https://api.grancamerino.com/api/leagues/9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b203 \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "message": "League deleted successfully"
+}
+```
+</ResponseExample>

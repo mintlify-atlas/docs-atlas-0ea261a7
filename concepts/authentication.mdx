@@ -1,0 +1,387 @@
+---
+title: Authentication system
+description: Learn how JWT authentication works in the Gran Camerino API, including token lifecycle and role-based access control
+---
+
+The Gran Camerino API uses JWT (JSON Web Token) authentication powered by `tymon/jwt-auth` package for stateless authentication.
+
+## JWT authentication flow
+
+Authentication is handled by the `AuthController` (`app/Http/Controllers/AuthController.php:12`) which provides complete token lifecycle management.
+
+### User registration
+
+New users register with email, password, and optional role:
+
+```php
+public function register(Request $request): JsonResponse
+{
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'password' => 'required|string|min:6',
+        'role' => 'sometimes|in:client,admin',
+    ]);
+
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+        'role' => $request->role ?? 'client',
+    ]);
+
+    $token = JWTAuth::fromUser($user);
+
+    return response()->json([
+        'message' => 'User registered successfully',
+        'user' => $user,
+        'token' => $token,
+        'token_type' => 'bearer',
+        'expires_in' => config('jwt.ttl') * 60,
+    ], 201);
+}
+```
+
+**Endpoint:** `POST /api/register`
+
+**Request:**
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "secret123"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "User registered successfully",
+  "user": {
+    "id": "9d4f3c2a-1b2c-4d5e-8f9a-1b2c3d4e5f6a",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "client"
+  },
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "token_type": "bearer",
+  "expires_in": 3600
+}
+```
+
+<Note>
+  Users default to `client` role unless explicitly set to `admin` during registration.
+</Note>
+
+### User login
+
+Existing users authenticate with email and password (`app/Http/Controllers/AuthController.php:51`):
+
+```php
+public function login(Request $request): JsonResponse
+{
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|string|email',
+        'password' => 'required|string',
+    ]);
+
+    $credentials = $request->only('email', 'password');
+
+    if (!$token = JWTAuth::attempt($credentials)) {
+        return response()->json(['error' => 'Invalid credentials'], 401);
+    }
+
+    $user = auth()->user();
+
+    return response()->json([
+        'message' => 'Login successful',
+        'user' => $user,
+        'token' => $token,
+        'token_type' => 'bearer',
+        'expires_in' => config('jwt.ttl') * 60,
+    ]);
+}
+```
+
+**Endpoint:** `POST /api/login`
+
+**Request:**
+```json
+{
+  "email": "john@example.com",
+  "password": "secret123"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Login successful",
+  "user": {
+    "id": "9d4f3c2a-1b2c-4d5e-8f9a-1b2c3d4e5f6a",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "client"
+  },
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "token_type": "bearer",
+  "expires_in": 3600
+}
+```
+
+## Token lifecycle
+
+### Token structure
+
+JWT tokens include custom claims defined in the `User` model (`app/Models/User.php:67`):
+
+```php
+public function getJWTCustomClaims(): array
+{
+    return [
+        'role' => $this->role,
+    ];
+}
+```
+
+This embeds the user's role directly in the token payload, enabling role-based authorization without database queries.
+
+### Using tokens
+
+Include the token in the `Authorization` header for protected endpoints:
+
+```http
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGc...
+```
+
+### Token refresh
+
+Tokens can be refreshed before expiry (`app/Http/Controllers/AuthController.php:101`):
+
+```php
+public function refresh(): JsonResponse
+{
+    try {
+        $token = JWTAuth::refresh();
+
+        return response()->json([
+            'message' => 'Token refreshed',
+            'token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => config('jwt.ttl') * 60,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Failed to refresh token',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
+```
+
+**Endpoint:** `POST /api/refresh` (requires valid token)
+
+<Warning>
+  The refresh endpoint requires an existing valid token. You cannot refresh an expired token.
+</Warning>
+
+### Token invalidation (logout)
+
+Users can invalidate their token on logout (`app/Http/Controllers/AuthController.php:82`):
+
+```php
+public function logout(): JsonResponse
+{
+    try {
+        JWTAuth::invalidate(JWTAuth::getToken());
+
+        return response()->json([
+            'message' => 'Successfully logged out',
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Failed to logout',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
+```
+
+**Endpoint:** `POST /api/logout` (requires valid token)
+
+### Get authenticated user
+
+Retrieve the current user's profile (`app/Http/Controllers/AuthController.php:123`):
+
+```php
+public function me(): JsonResponse
+{
+    return response()->json([
+        'user' => auth()->user(),
+    ]);
+}
+```
+
+**Endpoint:** `GET /api/me` (requires valid token)
+
+## Role-based access control
+
+The API implements two user roles:
+
+- **client** - Regular customers (default)
+- **admin** - Administrative users with elevated permissions
+
+### Admin middleware
+
+The `IsAdmin` middleware (`app/Http/Middleware/IsAdmin.php:10`) protects admin-only endpoints:
+
+```php
+public function handle(Request $request, Closure $next): Response
+{
+    if (!auth()->check()) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Unauthenticated'
+        ], 401);
+    }
+
+    if (auth()->user()->role !== 'admin') {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Unauthorized. Admin access required.'
+        ], 403);
+    }
+
+    return $next($request);
+}
+```
+
+### Protected route groups
+
+Routes are organized by authentication requirements (`routes/api.php`):
+
+#### Public routes
+
+```php
+// No authentication required
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/categories', [CategoryController::class, 'index']);
+```
+
+#### Authenticated routes
+
+```php
+// Requires valid JWT token (any role)
+Route::middleware('auth:api')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::apiResource('addresses', AddressController::class);
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::post('/orders', [OrderController::class, 'store']);
+});
+```
+
+#### Admin-only routes
+
+```php
+// Requires JWT token + admin role
+Route::middleware(['auth:api', 'admin'])->group(function () {
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::put('/products/{product}', [ProductController::class, 'update']);
+    Route::get('/users', [UserController::class, 'index']);
+    Route::patch('/users/{user}/toggle-admin', [UserController::class, 'toggleAdmin']);
+});
+```
+
+### Role checking in controllers
+
+Controllers can also check roles programmatically. Example from `OrderController` (`app/Http/Controllers/OrderController.php:32`):
+
+```php
+public function index(Request $request): JsonResponse
+{
+    $user = $request->user();
+    
+    // Admin sees all orders
+    if ($user->role === 'admin') {
+        $orders = Order::with(['items', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    } else {
+        // Clients only see their own orders
+        $orders = $user->orders()
+            ->with(['items'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+    
+    return response()->json([
+        'status' => 'success',
+        'data' => $orders
+    ]);
+}
+```
+
+## Security best practices
+
+<Accordion title="Password hashing">
+  Passwords are hashed using Laravel's `Hash` facade with bcrypt:
+  
+  ```php
+  'password' => Hash::make($request->password)
+  ```
+  
+  The `User` model automatically casts the password field to `hashed` type.
+</Accordion>
+
+<Accordion title="Token configuration">
+  Configure JWT settings in `config/jwt.php`:
+  
+  - `ttl` - Token lifetime in minutes (default: 60)
+  - `refresh_ttl` - Refresh window in minutes (default: 20160 = 2 weeks)
+  - `algo` - Signing algorithm (default: HS256)
+  
+  Set your secret in `.env`:
+  ```
+  JWT_SECRET=your-secret-key
+  ```
+</Accordion>
+
+<Accordion title="CORS configuration">
+  The API supports cross-origin requests. Configure allowed origins in `config/cors.php` to restrict access to trusted domains.
+</Accordion>
+
+<Warning>
+  Never expose JWT secrets in client-side code or version control. Always use environment variables.
+</Warning>
+
+## Error responses
+
+### Authentication errors
+
+**401 Unauthorized** - Invalid or missing token:
+```json
+{
+  "error": "Invalid credentials"
+}
+```
+
+**403 Forbidden** - Insufficient permissions:
+```json
+{
+  "status": "error",
+  "message": "Unauthorized. Admin access required."
+}
+```
+
+**422 Validation Error** - Invalid input:
+```json
+{
+  "errors": {
+    "email": ["The email field is required."],
+    "password": ["The password must be at least 6 characters."]
+  }
+}
+```

@@ -1,0 +1,220 @@
+---
+title: Create Product
+api: POST /api/products
+---
+
+Create a new product. This endpoint requires admin authentication.
+
+<Warning>
+  This endpoint requires admin privileges. Only authenticated users with admin role can create products.
+</Warning>
+
+## Authentication
+
+Requires valid Bearer token with admin privileges.
+
+## Request Body
+
+<ParamField body="name" type="string" required>
+  Product name (max 255 characters)
+</ParamField>
+
+<ParamField body="slug" type="string" required>
+  URL-friendly unique identifier (max 255 characters)
+</ParamField>
+
+<ParamField body="category_id" type="string" required>
+  Category UUID (must exist in categories table)
+</ParamField>
+
+<ParamField body="team_id" type="string" required>
+  Team UUID (must exist in teams table)
+</ParamField>
+
+<ParamField body="price_usd" type="number" required>
+  Price in USD (minimum: 0)
+</ParamField>
+
+<ParamField body="price_cop" type="number" required>
+  Price in Colombian Pesos (minimum: 0)
+</ParamField>
+
+<ParamField body="description" type="string">
+  Product description (optional)
+</ParamField>
+
+<ParamField body="images" type="array">
+  Array of image objects or URLs (optional)
+  
+  <ParamField body="url" type="string" required>
+    Image URL
+  </ParamField>
+  
+  <ParamField body="is_primary" type="boolean">
+    Whether this is the primary image (default: false). If no image is marked primary, the first one will be set as primary.
+  </ParamField>
+</ParamField>
+
+<ParamField body="variants" type="array" required>
+  Array of size variants (at least one required). Duplicate sizes are automatically filtered.
+  
+  <ParamField body="size_id" type="string" required>
+    Size UUID (must exist in sizes table)
+  </ParamField>
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Created product object with relationships loaded (category, team, images, variants)
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST "https://api.grancamerino.com/api/products" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "name": "Real Madrid Home Jersey 2024",
+    "slug": "real-madrid-home-jersey-2024",
+    "category_id": "123e4567-e89b-12d3-a456-426614174001",
+    "team_id": "123e4567-e89b-12d3-a456-426614174002",
+    "price_usd": 94.99,
+    "price_cop": 379960,
+    "description": "Official Real Madrid home jersey for 2024 season",
+    "images": [
+      {
+        "url": "https://storage.grancamerino.com/products/real-madrid-2024.jpg",
+        "is_primary": true
+      },
+      {
+        "url": "https://storage.grancamerino.com/products/real-madrid-2024-back.jpg"
+      }
+    ],
+    "variants": [
+      {"size_id": "123e4567-e89b-12d3-a456-426614174010"},
+      {"size_id": "123e4567-e89b-12d3-a456-426614174011"},
+      {"size_id": "123e4567-e89b-12d3-a456-426614174012"}
+    ]
+  }'
+```
+
+```bash Minimal Example
+curl -X POST "https://api.grancamerino.com/api/products" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "name": "Argentina Home Jersey 2024",
+    "slug": "argentina-home-jersey-2024",
+    "category_id": "123e4567-e89b-12d3-a456-426614174001",
+    "team_id": "123e4567-e89b-12d3-a456-426614174003",
+    "price_usd": 79.99,
+    "price_cop": 319960,
+    "variants": [
+      {"size_id": "123e4567-e89b-12d3-a456-426614174010"}
+    ]
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success Response (201)
+{
+  "status": "success",
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174050",
+    "name": "Real Madrid Home Jersey 2024",
+    "slug": "real-madrid-home-jersey-2024",
+    "description": "Official Real Madrid home jersey for 2024 season",
+    "price_usd": 94.99,
+    "price_cop": 379960,
+    "is_active": true,
+    "category_id": "123e4567-e89b-12d3-a456-426614174001",
+    "team_id": "123e4567-e89b-12d3-a456-426614174002",
+    "created_at": "2024-03-03T10:30:00.000000Z",
+    "updated_at": "2024-03-03T10:30:00.000000Z",
+    "category": {
+      "id": "123e4567-e89b-12d3-a456-426614174001",
+      "name": "Club Jerseys",
+      "slug": "club-jerseys"
+    },
+    "team": {
+      "id": "123e4567-e89b-12d3-a456-426614174002",
+      "name": "Real Madrid",
+      "slug": "real-madrid"
+    },
+    "images": [
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174051",
+        "product_id": "123e4567-e89b-12d3-a456-426614174050",
+        "url": "https://storage.grancamerino.com/products/real-madrid-2024.jpg",
+        "is_primary": true
+      },
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174052",
+        "product_id": "123e4567-e89b-12d3-a456-426614174050",
+        "url": "https://storage.grancamerino.com/products/real-madrid-2024-back.jpg",
+        "is_primary": false
+      }
+    ],
+    "variants": [
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174053",
+        "product_id": "123e4567-e89b-12d3-a456-426614174050",
+        "size_id": "123e4567-e89b-12d3-a456-426614174010",
+        "size": {
+          "id": "123e4567-e89b-12d3-a456-426614174010",
+          "name": "Small",
+          "code": "S"
+        }
+      },
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174054",
+        "product_id": "123e4567-e89b-12d3-a456-426614174050",
+        "size_id": "123e4567-e89b-12d3-a456-426614174011",
+        "size": {
+          "id": "123e4567-e89b-12d3-a456-426614174011",
+          "name": "Medium",
+          "code": "M"
+        }
+      }
+    ]
+  }
+}
+```
+
+```json Validation Error (422)
+{
+  "message": "The name field is required. (and 2 more errors)",
+  "errors": {
+    "name": [
+      "The name field is required."
+    ],
+    "slug": [
+      "The slug has already been taken."
+    ],
+    "variants": [
+      "The variants field is required."
+    ]
+  }
+}
+```
+
+```json Unauthorized (401)
+{
+  "message": "Unauthenticated."
+}
+```
+
+```json Forbidden (403)
+{
+  "message": "This action is unauthorized."
+}
+```
+</ResponseExample>

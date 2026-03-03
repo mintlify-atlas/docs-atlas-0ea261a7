@@ -1,0 +1,308 @@
+---
+title: 'Sizes'
+description: 'Manage product sizes for jerseys'
+---
+
+<Note>
+  **Public Access:** GET endpoints are publicly accessible
+  
+  **Admin Only:** POST, PUT, DELETE require authentication and admin privileges
+</Note>
+
+## List All Sizes
+
+<api method="GET" url="https://api.grancamerino.com/api/sizes" />
+
+Retrieve all available product sizes, ordered alphabetically by name.
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of size objects, ordered by name
+  
+  <Expandable title="Size Object">
+    <ResponseField name="id" type="string">
+      UUID of the size
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Size name (e.g., "S", "M", "L", "XL", "XXL")
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp
+    </ResponseField>
+    
+    <ResponseField name="updated_at" type="string">
+      ISO 8601 timestamp
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl https://api.grancamerino.com/api/sizes
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b601",
+      "name": "L",
+      "created_at": "2024-01-15T11:00:00.000000Z",
+      "updated_at": "2024-01-15T11:00:00.000000Z"
+    },
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b602",
+      "name": "M",
+      "created_at": "2024-01-15T11:01:00.000000Z",
+      "updated_at": "2024-01-15T11:01:00.000000Z"
+    },
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b603",
+      "name": "S",
+      "created_at": "2024-01-15T11:02:00.000000Z",
+      "updated_at": "2024-01-15T11:02:00.000000Z"
+    },
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b604",
+      "name": "XL",
+      "created_at": "2024-01-15T11:03:00.000000Z",
+      "updated_at": "2024-01-15T11:03:00.000000Z"
+    },
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b605",
+      "name": "XXL",
+      "created_at": "2024-01-15T11:04:00.000000Z",
+      "updated_at": "2024-01-15T11:04:00.000000Z"
+    }
+  ]
+}
+```
+</ResponseExample>
+
+---
+
+## Get Single Size
+
+<api method="GET" url="https://api.grancamerino.com/api/sizes/{id}" />
+
+Retrieve a specific size by ID.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Size UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Size object (same structure as list endpoint)
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl https://api.grancamerino.com/api/sizes/9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b601
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": {
+    "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b601",
+    "name": "L",
+    "created_at": "2024-01-15T11:00:00.000000Z",
+    "updated_at": "2024-01-15T11:00:00.000000Z"
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Create Size
+
+<api method="POST" url="https://api.grancamerino.com/api/sizes" auth="Bearer" />
+
+<Note type="warning">
+  **Admin Only** - Requires authentication with admin privileges
+</Note>
+
+Create a new product size.
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with admin privileges
+</ParamField>
+
+### Body Parameters
+
+<ParamField body="name" type="string" required>
+  Size name (max 255 characters, must be unique)
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Created size object
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST https://api.grancamerino.com/api/sizes \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "XXXL"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": {
+    "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b606",
+    "name": "XXXL",
+    "created_at": "2024-03-03T15:10:00.000000Z",
+    "updated_at": "2024-03-03T15:10:00.000000Z"
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Update Size
+
+<api method="PUT" url="https://api.grancamerino.com/api/sizes/{id}" auth="Bearer" />
+
+<Note type="warning">
+  **Admin Only** - Requires authentication with admin privileges
+</Note>
+
+Update an existing size.
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with admin privileges
+</ParamField>
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Size UUID
+</ParamField>
+
+### Body Parameters
+
+<ParamField body="name" type="string" required>
+  Size name (max 255 characters, must be unique except for current size)
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Updated size object
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X PUT https://api.grancamerino.com/api/sizes/9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b606 \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "3XL"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": {
+    "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b606",
+    "name": "3XL",
+    "created_at": "2024-03-03T15:10:00.000000Z",
+    "updated_at": "2024-03-03T15:12:00.000000Z"
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Delete Size
+
+<api method="DELETE" url="https://api.grancamerino.com/api/sizes/{id}" auth="Bearer" />
+
+<Note type="warning">
+  **Admin Only** - Requires authentication with admin privileges
+</Note>
+
+Delete a size from the system.
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with admin privileges
+</ParamField>
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Size UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Confirmation message
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X DELETE https://api.grancamerino.com/api/sizes/9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b606 \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "message": "Size deleted successfully"
+}
+```
+</ResponseExample>

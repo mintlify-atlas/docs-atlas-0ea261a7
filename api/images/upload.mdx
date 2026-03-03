@@ -1,0 +1,126 @@
+---
+title: Upload image
+description: Upload images to Cloudinary with automatic optimization
+---
+
+## POST /api/images/upload
+
+Upload an image to Cloudinary with automatic optimization and type-specific dimensions.
+
+<Warning>Requires authentication with a valid Bearer token.</Warning>
+
+## Request
+
+### Headers
+
+```http
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: multipart/form-data
+```
+
+### Parameters
+
+<ParamField body="image" type="file" required>
+  Image file to upload. Supported formats: jpeg, png, jpg, gif, webp. Maximum size: 5MB.
+</ParamField>
+
+<ParamField body="folder" type="string">
+  Cloudinary folder name. If not provided, uses the type parameter to generate folder name (e.g., "products", "teams").
+</ParamField>
+
+<ParamField body="type" type="string">
+  Image type for automatic dimension configuration. Options: `category`, `league`, `country`, `team`, `product`.
+  
+  **Type-specific dimensions:**
+  - `category` / `league`: 400x400
+  - `country`: 300x200
+  - `team`: 300x300
+  - `product`: 1200x1200 (default)
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success` or `error`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Uploaded image information
+  
+  <Expandable title="data">
+    <ResponseField name="url" type="string">
+      Secure HTTPS URL of the uploaded image
+    </ResponseField>
+    
+    <ResponseField name="public_id" type="string">
+      Cloudinary public ID for the image (used for deletion and optimization)
+    </ResponseField>
+    
+    <ResponseField name="width" type="integer">
+      Image width in pixels
+    </ResponseField>
+    
+    <ResponseField name="height" type="integer">
+      Image height in pixels
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example
+
+### Request
+
+```bash
+curl -X POST https://api.grancamerino.com/api/images/upload \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -F "image=@/path/to/jersey.jpg" \
+  -F "type=product" \
+  -F "folder=products/jerseys"
+```
+
+### Response
+
+```json
+{
+  "status": "success",
+  "data": {
+    "url": "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/products/jerseys/abc123.jpg",
+    "public_id": "products/jerseys/abc123",
+    "width": 1200,
+    "height": 1200
+  }
+}
+```
+
+## Error responses
+
+### Validation error (422)
+
+```json
+{
+  "status": "error",
+  "message": "Error al subir la imagen",
+  "errors": {
+    "image": [
+      "The image field is required."
+    ]
+  }
+}
+```
+
+### Upload error (500)
+
+```json
+{
+  "status": "error",
+  "message": "Error al subir la imagen",
+  "error": "Failed to upload to Cloudinary"
+}
+```
+
+<Note>
+  Images are automatically optimized with:
+  - Quality: auto
+  - Format: auto (WebP when supported)
+  - Crop: limit (maintains aspect ratio)
+</Note>

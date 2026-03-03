@@ -1,0 +1,357 @@
+---
+title: "Favorites"
+description: "Manage user favorite products (wishlist)"
+---
+
+## Overview
+
+The Favorites API allows authenticated users to manage their wishlist of favorite products. Users can add products to favorites, remove them, toggle favorite status, and view their complete favorites list.
+
+**Authentication:** All endpoints require Bearer token authentication.
+
+---
+
+## List Favorites
+
+<api method="GET" path="/api/favorites" auth="required">
+Get all favorite products for the authenticated user. Each favorite includes the complete product details.
+</api>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="array">
+Array of favorite objects
+  <Expandable title="Favorite object">
+    <ResponseField name="id" type="string">UUID of the favorite record</ResponseField>
+    <ResponseField name="user_id" type="string">UUID of the user</ResponseField>
+    <ResponseField name="product_id" type="string">UUID of the product</ResponseField>
+    <ResponseField name="created_at" type="string">ISO 8601 timestamp</ResponseField>
+    <ResponseField name="updated_at" type="string">ISO 8601 timestamp</ResponseField>
+    <ResponseField name="product" type="object">
+      Complete product object with all details (name, price, images, etc.)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET https://api.grancamerino.com/api/favorites \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a",
+      "user_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6b",
+      "product_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6c",
+      "created_at": "2024-01-15T10:30:00.000000Z",
+      "updated_at": "2024-01-15T10:30:00.000000Z",
+      "product": {
+        "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6c",
+        "name": "Colombia Home Jersey 2024",
+        "slug": "colombia-home-jersey-2024",
+        "description": "Official Colombia national team home jersey for 2024",
+        "base_price": 89.99,
+        "discounted_price": 79.99,
+        "stock": 150,
+        "is_active": true,
+        "is_featured": true,
+        "team_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6d",
+        "category_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6e",
+        "created_at": "2024-01-10T08:00:00.000000Z",
+        "updated_at": "2024-01-10T08:00:00.000000Z"
+      }
+    },
+    {
+      "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f7a",
+      "user_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6b",
+      "product_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f7c",
+      "created_at": "2024-01-18T14:20:00.000000Z",
+      "updated_at": "2024-01-18T14:20:00.000000Z",
+      "product": {
+        "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f7c",
+        "name": "Barcelona Away Jersey 2024",
+        "slug": "barcelona-away-jersey-2024",
+        "description": "FC Barcelona away kit for the 2024 season",
+        "base_price": 95.00,
+        "discounted_price": null,
+        "stock": 85,
+        "is_active": true,
+        "is_featured": false,
+        "team_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f7d",
+        "category_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f7e",
+        "created_at": "2024-01-12T09:15:00.000000Z",
+        "updated_at": "2024-01-12T09:15:00.000000Z"
+      }
+    }
+  ]
+}
+```
+
+---
+
+## Add to Favorites
+
+<api method="POST" path="/api/favorites" auth="required">
+Add a product to the user's favorites list.
+</api>
+
+### Request Body
+
+<ParamField name="product_id" type="string" required>
+UUID of the product to add to favorites. Must be a valid product ID that exists in the database.
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success" or "error")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+Success or error message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+The created favorite object with product details
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.grancamerino.com/api/favorites \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "product_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6c"
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "message": "Product added to favorites",
+  "data": {
+    "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a",
+    "user_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6b",
+    "product_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6c",
+    "created_at": "2024-01-20T15:45:00.000000Z",
+    "updated_at": "2024-01-20T15:45:00.000000Z",
+    "product": {
+      "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6c",
+      "name": "Colombia Home Jersey 2024",
+      "slug": "colombia-home-jersey-2024",
+      "description": "Official Colombia national team home jersey for 2024",
+      "base_price": 89.99,
+      "discounted_price": 79.99,
+      "stock": 150,
+      "is_active": true,
+      "is_featured": true,
+      "team_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6d",
+      "category_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6e",
+      "created_at": "2024-01-10T08:00:00.000000Z",
+      "updated_at": "2024-01-10T08:00:00.000000Z"
+    }
+  }
+}
+```
+
+### Error Response (Already Favorited)
+
+```json
+{
+  "status": "error",
+  "message": "Product already in favorites"
+}
+```
+
+### Error Response (Invalid Product)
+
+```json
+{
+  "status": "error",
+  "message": "The selected product id is invalid.",
+  "errors": {
+    "product_id": [
+      "The selected product id is invalid."
+    ]
+  }
+}
+```
+
+---
+
+## Remove from Favorites
+
+<api method="DELETE" path="/api/favorites/{product_id}" auth="required">
+Remove a product from the user's favorites list.
+</api>
+
+### Path Parameters
+
+<ParamField name="product_id" type="string" required>
+UUID of the product to remove from favorites
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success" or "error")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+Success or error message
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X DELETE https://api.grancamerino.com/api/favorites/9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6c \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "message": "Product removed from favorites"
+}
+```
+
+### Error Response (Not Found)
+
+```json
+{
+  "status": "error",
+  "message": "Product not found in favorites"
+}
+```
+
+---
+
+## Toggle Favorite
+
+<api method="POST" path="/api/favorites/{product_id}/toggle" auth="required">
+Toggle a product's favorite status. If the product is already favorited, it will be removed. If not favorited, it will be added.
+</api>
+
+### Path Parameters
+
+<ParamField name="product_id" type="string" required>
+UUID of the product to toggle
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+Message indicating whether product was added or removed
+</ResponseField>
+
+<ResponseField name="data" type="object">
+Toggle result object
+  <Expandable title="Toggle data">
+    <ResponseField name="is_favorited" type="boolean">
+      Whether the product is now favorited (true) or not (false)
+    </ResponseField>
+    <ResponseField name="favorite" type="object | null">
+      The favorite object with product details if added, null if removed
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request (Adding to Favorites)
+
+```bash
+curl -X POST https://api.grancamerino.com/api/favorites/9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6c/toggle \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+```
+
+### Example Response (Added)
+
+```json
+{
+  "status": "success",
+  "message": "Product added to favorites",
+  "data": {
+    "is_favorited": true,
+    "favorite": {
+      "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a",
+      "user_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6b",
+      "product_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6c",
+      "created_at": "2024-01-20T16:00:00.000000Z",
+      "updated_at": "2024-01-20T16:00:00.000000Z",
+      "product": {
+        "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6c",
+        "name": "Colombia Home Jersey 2024",
+        "slug": "colombia-home-jersey-2024",
+        "description": "Official Colombia national team home jersey for 2024",
+        "base_price": 89.99,
+        "discounted_price": 79.99,
+        "stock": 150,
+        "is_active": true,
+        "is_featured": true,
+        "team_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6d",
+        "category_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6e",
+        "created_at": "2024-01-10T08:00:00.000000Z",
+        "updated_at": "2024-01-10T08:00:00.000000Z"
+      }
+    }
+  }
+}
+```
+
+### Example Response (Removed)
+
+```json
+{
+  "status": "success",
+  "message": "Product removed from favorites",
+  "data": {
+    "is_favorited": false,
+    "favorite": null
+  }
+}
+```
+
+---
+
+## Use Cases
+
+### Wishlist Feature
+
+The favorites API is perfect for implementing a wishlist or "save for later" feature:
+
+```bash
+# When user clicks the heart icon on a product
+curl -X POST https://api.grancamerino.com/api/favorites/PRODUCT_ID/toggle \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Display all saved items
+curl -X GET https://api.grancamerino.com/api/favorites \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Product Recommendations
+
+Use favorite products to understand user preferences and provide personalized recommendations based on favorited teams, categories, or product types.

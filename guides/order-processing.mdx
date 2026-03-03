@@ -1,0 +1,516 @@
+---
+title: Order processing
+description: Complete guide to creating orders, managing order status, processing payments with Wompi and crypto, and handling order cancellations
+---
+
+This guide covers the complete order lifecycle in the Gran Camerino API, from creating orders with payment integration to tracking status updates and handling cancellations.
+
+## Create an order
+
+Orders are created with payment gateway integration. The API supports Wompi (for COP payments) and NOWPayments (for cryptocurrency).
+
+<Steps>
+  <Step title="Prepare order data">
+    You need:
+    - A valid address ID for shipping
+    - Order items with product and variant information
+    - Payment gateway selection (wompi or nowpayments)
+    - Optional coupon code
+  </Step>
+
+  <Step title="Send the POST request">
+    <CodeGroup>
+    ```bash cURL
+    curl -X POST https://api.grancamerino.com/api/orders \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "address_id": "addr-550e8400-e29b-41d4-a716-446655440000",
+        "coupon_code": "SUMMER20",
+        "payment_gateway": "wompi",
+        "redirect_url": "https://mystore.com/order-confirmation",
+        "notes": "Please include gift wrapping",
+        "items": [
+          {
+            "product_id": "prod-123e4567-e89b-12d3-a456-426614174000",
+            "product_variant_id": "var-223e4567-e89b-12d3-a456-426614174001",
+            "quantity": 2,
+            "customization_name": "MESSI",
+            "customization_number": "10"
+          },
+          {
+            "product_id": "prod-323e4567-e89b-12d3-a456-426614174002",
+            "product_variant_id": "var-423e4567-e89b-12d3-a456-426614174003",
+            "quantity": 1
+          }
+        ]
+      }'
+    ```
+
+    ```javascript JavaScript
+    const response = await fetch('https://api.grancamerino.com/api/orders', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        address_id: 'addr-550e8400-e29b-41d4-a716-446655440000',
+        coupon_code: 'SUMMER20',
+        payment_gateway: 'wompi',
+        redirect_url: 'https://mystore.com/order-confirmation',
+        items: [
+          {
+            product_id: 'prod-123',
+            product_variant_id: 'var-223',
+            quantity: 2,
+            customization_name: 'MESSI',
+            customization_number: '10'
+          }
+        ]
+      })
+    });
+
+    const { data } = await response.json();
+    
+    // Redirect to payment
+    if (data.checkout_url) {
+      window.location.href = data.checkout_url;
+    }
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Handle the response">
+    The response includes order details and payment URLs:
+
+    ```json
+    {
+      "status": "success",
+      "message": "Order created successfully",
+      "data": {
+        "order": {
+          "id": "order-123e4567-e89b-12d3-a456-426614174000",
+          "order_number": "GC-2024-0001",
+          "status": "pending",
+          "subtotal": 179.98,
+          "tax_amount": 0,
+          "shipping_amount": 0,
+          "discount_amount": 35.99,
+          "total_amount": 143.99,
+          "payment_gateway": "wompi",
+          "items": [...],
+          "address": {...}
+        },
+        "payment_gateway": "wompi",
+        "checkout_url": "https://checkout.wompi.co/l/?public-key=pub_test_...&currency=COP&amount-in-cents=57596000&reference=order-123...",
+        "payment_data": {
+          "public_key": "pub_test_...",
+          "currency": "COP",
+          "amount_in_cents": 57596000,
+          "reference": "order-123e4567-e89b-12d3-a456-426614174000",
+          "signature": "b5c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6",
+          "redirect_url": "https://mystore.com/order-confirmation/order-123..."
+        }
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Redirect to payment">
+    Use the `checkout_url` from the response to redirect users to the payment gateway:
+
+    ```javascript
+    // Direct redirect
+    window.location.href = data.checkout_url;
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  For Wompi payments, prices are automatically converted to COP. For NOWPayments (crypto), USD prices are used.
+</Note>
+
+## Order workflow and statuses
+
+Orders progress through different statuses:
+
+- `pending`: Order created, awaiting payment
+- `paid`: Payment confirmed
+- `preparing`: Order being prepared for shipment
+- `shipped`: Order dispatched
+- `in_transit`: Order in delivery
+- `delivered`: Order successfully delivered
+- `cancelled`: Order cancelled by user or admin
+- `failed`: Payment failed
+
+### Update order status (Admin only)
+
+```bash cURL
+curl -X PATCH https://api.grancamerino.com/api/orders/{order_id}/status \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "shipped"
+  }'
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "message": "Order status updated successfully",
+  "data": {
+    "id": "order-123",
+    "status": "shipped",
+    "shipped_at": "2024-03-01T15:30:00.000000Z"
+  }
+}
+```
+
+<Note>
+  Updating status to `paid`, `shipped`, or `delivered` automatically sets the corresponding timestamp (`paid_at`, `shipped_at`, `delivered_at`).
+</Note>
+
+## Payment processing with Wompi
+
+Wompi is used for COP (Colombian Peso) payments. The integration uses Wompi's Checkout Widget.
+
+### How Wompi payment works
+
+<Steps>
+  <Step title="Create order with Wompi gateway">
+    ```bash
+    curl -X POST https://api.grancamerino.com/api/orders \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "payment_gateway": "wompi",
+        "redirect_url": "https://mystore.com/order-confirmation",
+        ...
+      }'
+    ```
+  </Step>
+
+  <Step title="Redirect user to checkout">
+    The API returns a `checkout_url` with pre-filled payment data and integrity signature:
+
+    ```javascript
+    // The checkout_url includes all necessary parameters
+    window.location.href = data.checkout_url;
+    ```
+  </Step>
+
+  <Step title="Wompi processes payment">
+    User completes payment on Wompi's secure checkout page. After payment, Wompi:
+    - Redirects user to your `redirect_url` + `/{order_id}`
+    - Sends a webhook to your API with transaction status
+  </Step>
+
+  <Step title="Webhook updates order status">
+    The API automatically processes Wompi webhooks at `/webhooks/wompi` and updates order status:
+    - `APPROVED` → order status becomes `paid`
+    - `DECLINED`, `ERROR`, `VOIDED` → order status becomes `failed`
+  </Step>
+</Steps>
+
+### Test Wompi signature generation
+
+For debugging, you can test signature generation:
+
+```bash cURL
+curl -X POST https://api.grancamerino.com/api/test-wompi-signature \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reference": "test-order-001",
+    "amount": 100.50
+  }'
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "data": {
+    "reference": "test-order-001",
+    "amount": 100.50,
+    "amount_in_cents": 10050,
+    "signature": "f3e2a1b4c5d6e7f8a9b0c1d2e3f4a5b6",
+    "payment_data": {...},
+    "checkout_url": "https://checkout.wompi.co/l/?...",
+    "instructions": {
+      "frontend": "Use checkout_url directly: window.location.href = response.data.checkout_url",
+      "do_not": "Do NOT build the URL manually in frontend"
+    }
+  }
+}
+```
+
+<Warning>
+  In sandbox mode, Wompi only accepts `http://localhost` URLs, not `https://localhost`. The API automatically converts localhost HTTPS URLs to HTTP.
+</Warning>
+
+## Payment processing with cryptocurrency
+
+NOWPayments enables cryptocurrency payments using USD prices.
+
+### Create crypto payment order
+
+```bash cURL
+curl -X POST https://api.grancamerino.com/api/orders \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "payment_gateway": "nowpayments",
+    "crypto_currency": "btc",
+    "address_id": "addr-550e8400",
+    "items": [...]
+  }'
+```
+
+### Response with payment URL
+
+```json
+{
+  "status": "success",
+  "data": {
+    "order": {...},
+    "payment_urls": {
+      "payment_url": "https://nowpayments.io/payment/?iid=123456",
+      "invoice_url": "https://nowpayments.io/payment/?iid=123456"
+    },
+    "payment_data": {
+      "invoice_id": "123456",
+      "price_amount": 89.99,
+      "price_currency": "usd",
+      "pay_currency": "btc"
+    }
+  }
+}
+```
+
+### Get available cryptocurrencies
+
+```bash cURL
+curl https://api.grancamerino.com/api/crypto-currencies
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "data": {
+    "currencies": ["btc", "eth", "usdt", "ltc", "doge", ...]
+  }
+}
+```
+
+### Get crypto price estimate
+
+```bash cURL
+curl -X POST https://api.grancamerino.com/api/crypto-estimate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 89.99,
+    "currency": "btc"
+  }'
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "data": {
+    "currency_from": "usd",
+    "amount_from": 89.99,
+    "currency_to": "btc",
+    "estimated_amount": 0.00142563
+  }
+}
+```
+
+### NOWPayments webhook handling
+
+The API automatically processes NOWPayments webhooks at `/webhooks/nowpayments`:
+
+- `finished` → order status becomes `paid`
+- `partially_paid` → order status remains `pending`
+- `failed`, `expired`, `refunded` → order status becomes `failed`
+- `waiting`, `confirming`, `confirmed`, `sending` → order status remains `pending`
+
+## Retrieve orders
+
+### List all orders
+
+```bash cURL
+# Customers see only their orders
+curl https://api.grancamerino.com/api/orders \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Admins see all orders with user information
+curl https://api.grancamerino.com/api/orders \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "order-123",
+      "order_number": "GC-2024-0001",
+      "status": "paid",
+      "total_amount": 143.99,
+      "user": {
+        "id": "user-456",
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      "items": [...],
+      "address": {...},
+      "created_at": "2024-03-01T10:00:00.000000Z"
+    }
+  ]
+}
+```
+
+### Get single order
+
+```bash cURL
+curl https://api.grancamerino.com/api/orders/{order_id} \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+Includes full order details with items, product information, variant sizes, address, and coupon data.
+
+## Check payment status
+
+Manually check the payment status from the payment gateway:
+
+```bash cURL
+curl https://api.grancamerino.com/api/orders/{order_id}/payment-status \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "data": {
+    "order_status": "paid",
+    "payment_status": {
+      "id": "txn-789",
+      "status": "APPROVED",
+      "payment_method_type": "CARD",
+      "amount_in_cents": 57596000,
+      "created_at": "2024-03-01T10:05:00.000000Z"
+    }
+  }
+}
+```
+
+## Get order checkout URL
+
+Retrieve the Wompi checkout URL for an existing order:
+
+```bash cURL
+curl https://api.grancamerino.com/api/orders/{order_id}/checkout-url \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+Useful if the user needs to retry payment.
+
+## Order cancellation
+
+Users can cancel their own orders if they haven't been shipped or delivered yet.
+
+```bash cURL
+curl -X POST https://api.grancamerino.com/api/orders/{order_id}/cancel \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "message": "Order cancelled successfully",
+  "data": {
+    "id": "order-123",
+    "status": "cancelled"
+  }
+}
+```
+
+<Warning>
+  Orders with status `shipped` or `delivered` cannot be cancelled. The API will return a 400 error.
+</Warning>
+
+## Order customization
+
+Each order item can include jersey customization:
+
+- `customization_name`: Player name (max 255 characters)
+- `customization_number`: Jersey number (max 50 characters)
+
+Example:
+```json
+{
+  "items": [
+    {
+      "product_id": "prod-123",
+      "product_variant_id": "var-456",
+      "quantity": 1,
+      "customization_name": "RONALDO",
+      "customization_number": "7"
+    }
+  ]
+}
+```
+
+Customization details are stored with each order item and included in order responses.
+
+## Coupon application
+
+Apply discount coupons when creating orders:
+
+```bash cURL
+curl -X POST https://api.grancamerino.com/api/orders \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "coupon_code": "SUMMER20",
+    ...
+  }'
+```
+
+The API validates the coupon and applies the discount:
+- Checks if coupon is active and not expired
+- Calculates discount based on coupon type (percentage or fixed)
+- Updates `discount_amount` and `total_amount`
+- Increments coupon usage counter
+
+If the coupon is invalid:
+```json
+{
+  "status": "error",
+  "message": "Invalid or expired coupon"
+}
+```
+
+## Shipping and taxes
+
+Currently, the Gran Camerino API applies:
+- **Tax**: 0% (no tax)
+- **Shipping**: Free (0 cost)
+
+The order totals are calculated as:
+```
+total_amount = subtotal - discount_amount + tax_amount + shipping_amount
+```
+
+Where:
+- `subtotal`: Sum of all item prices × quantities
+- `discount_amount`: Coupon discount
+- `tax_amount`: 0
+- `shipping_amount`: 0

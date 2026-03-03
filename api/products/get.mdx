@@ -1,0 +1,206 @@
+---
+title: Get Product
+api: GET /api/products/{product}
+---
+
+Retrieve detailed information about a specific product by its ID.
+
+## Path Parameters
+
+<ParamField path="product" type="string" required>
+  Product UUID
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Product object
+  
+  <ResponseField name="id" type="string">
+    Product UUID
+  </ResponseField>
+  
+  <ResponseField name="name" type="string">
+    Product name
+  </ResponseField>
+  
+  <ResponseField name="slug" type="string">
+    URL-friendly identifier
+  </ResponseField>
+  
+  <ResponseField name="description" type="string">
+    Product description
+  </ResponseField>
+  
+  <ResponseField name="price_usd" type="number">
+    Price in USD
+  </ResponseField>
+  
+  <ResponseField name="price_cop" type="number">
+    Price in Colombian Pesos
+  </ResponseField>
+  
+  <ResponseField name="is_active" type="boolean">
+    Whether the product is active
+  </ResponseField>
+  
+  <ResponseField name="category_id" type="string">
+    Category UUID
+  </ResponseField>
+  
+  <ResponseField name="team_id" type="string">
+    Team UUID
+  </ResponseField>
+  
+  <ResponseField name="category" type="object">
+    Category details (id, name, slug)
+  </ResponseField>
+  
+  <ResponseField name="team" type="object">
+    Team details including country and league relationships
+  </ResponseField>
+  
+  <ResponseField name="images" type="array">
+    Product images
+    
+    <ResponseField name="id" type="string">
+      Image UUID
+    </ResponseField>
+    
+    <ResponseField name="url" type="string">
+      Image URL
+    </ResponseField>
+    
+    <ResponseField name="is_primary" type="boolean">
+      Whether this is the primary image
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="variants" type="array">
+    Product size variants
+    
+    <ResponseField name="id" type="string">
+      Variant UUID
+    </ResponseField>
+    
+    <ResponseField name="size" type="object">
+      Size information (id, name, code)
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="special_categories" type="array">
+    Special categories (vintage, limited edition, etc.)
+  </ResponseField>
+  
+  <ResponseField name="created_at" type="string">
+    Creation timestamp
+  </ResponseField>
+  
+  <ResponseField name="updated_at" type="string">
+    Last update timestamp
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X GET "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000" \
+  -H "Accept: application/json"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "FC Barcelona Home Jersey 2024",
+    "slug": "fc-barcelona-home-jersey-2024",
+    "description": "Official FC Barcelona home jersey for the 2024 season. Features the classic blaugrana colors and Nike Dri-FIT technology.",
+    "price_usd": 89.99,
+    "price_cop": 359960,
+    "is_active": true,
+    "category_id": "123e4567-e89b-12d3-a456-426614174001",
+    "team_id": "123e4567-e89b-12d3-a456-426614174002",
+    "category": {
+      "id": "123e4567-e89b-12d3-a456-426614174001",
+      "name": "Club Jerseys",
+      "slug": "club-jerseys"
+    },
+    "team": {
+      "id": "123e4567-e89b-12d3-a456-426614174002",
+      "name": "FC Barcelona",
+      "slug": "fc-barcelona",
+      "logo_url": "https://storage.grancamerino.com/teams/barcelona.png",
+      "country": {
+        "id": "123e4567-e89b-12d3-a456-426614174003",
+        "name": "Spain",
+        "code": "ES",
+        "flag_url": "https://storage.grancamerino.com/flags/es.svg"
+      },
+      "league": {
+        "id": "123e4567-e89b-12d3-a456-426614174004",
+        "name": "La Liga",
+        "slug": "la-liga",
+        "logo_url": "https://storage.grancamerino.com/leagues/la-liga.png"
+      }
+    },
+    "images": [
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174005",
+        "url": "https://storage.grancamerino.com/products/barcelona-home-2024-front.jpg",
+        "is_primary": true,
+        "product_id": "123e4567-e89b-12d3-a456-426614174000"
+      },
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174006",
+        "url": "https://storage.grancamerino.com/products/barcelona-home-2024-back.jpg",
+        "is_primary": false,
+        "product_id": "123e4567-e89b-12d3-a456-426614174000"
+      }
+    ],
+    "variants": [
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174007",
+        "product_id": "123e4567-e89b-12d3-a456-426614174000",
+        "size_id": "123e4567-e89b-12d3-a456-426614174008",
+        "size": {
+          "id": "123e4567-e89b-12d3-a456-426614174008",
+          "name": "Medium",
+          "code": "M"
+        }
+      },
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174009",
+        "product_id": "123e4567-e89b-12d3-a456-426614174000",
+        "size_id": "123e4567-e89b-12d3-a456-426614174010",
+        "size": {
+          "id": "123e4567-e89b-12d3-a456-426614174010",
+          "name": "Large",
+          "code": "L"
+        }
+      }
+    ],
+    "special_categories": [
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174011",
+        "name": "New Arrivals",
+        "slug": "new-arrivals"
+      }
+    ],
+    "created_at": "2024-01-15T10:30:00.000000Z",
+    "updated_at": "2024-01-20T14:45:00.000000Z"
+  }
+}
+```
+
+```json Not Found
+{
+  "message": "No query results for model [App\\Models\\Product] 123e4567-e89b-12d3-a456-426614174999"
+}
+```
+</ResponseExample>

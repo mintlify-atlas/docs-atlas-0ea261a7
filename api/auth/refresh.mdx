@@ -1,0 +1,84 @@
+---
+title: 'Refresh Token'
+description: 'Refresh the current authentication token to extend the session'
+---
+
+## POST /api/refresh
+
+Refreshes the current JWT token, providing a new token with an extended expiration time. This allows users to maintain their session without re-authenticating.
+
+<Note>
+  This endpoint requires authentication. Include the current JWT token in the Authorization header.
+</Note>
+
+### Authentication
+
+This endpoint requires a valid JWT token in the Authorization header:
+
+```
+Authorization: Bearer {token}
+```
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message confirming token refresh.
+</ResponseField>
+
+<ResponseField name="token" type="string">
+  New JWT authentication token.
+</ResponseField>
+
+<ResponseField name="token_type" type="string">
+  Type of token. Always returns `bearer`.
+</ResponseField>
+
+<ResponseField name="expires_in" type="integer">
+  Token expiration time in seconds.
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.grancamerino.com/api/refresh \
+  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..." \
+  -H "Content-Type: application/json"
+```
+
+### Example Response
+
+```json
+{
+  "message": "Token refreshed",
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDAvYXBpL3JlZnJlc2giLCJpYXQiOjE3MDk0NzY4MDAsImV4cCI6MTcwOTQ4MDQwMCwibmJmIjoxNzA5NDc2ODAwLCJqdGkiOiJhYmMxMjMiLCJzdWIiOiIxIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyJ9...",
+  "token_type": "bearer",
+  "expires_in": 3600
+}
+```
+
+### Error Responses
+
+#### 401 Unauthorized
+
+Missing or invalid authentication token.
+
+```json
+{
+  "message": "Unauthenticated."
+}
+```
+
+#### 500 Internal Server Error
+
+Failed to refresh the token (e.g., token has expired beyond the refresh window).
+
+```json
+{
+  "error": "Failed to refresh token",
+  "message": "Token has expired and can no longer be refreshed"
+}
+```
+
+<Warning>
+  Tokens can only be refreshed within a specific time window. Once a token has expired beyond this window, users must log in again using the `/api/login` endpoint.
+</Warning>

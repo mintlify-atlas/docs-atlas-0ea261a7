@@ -1,0 +1,293 @@
+---
+title: Architecture overview
+description: Learn about the Laravel MVC structure, database schema, service layer, and controller organization in the Gran Camerino API
+---
+
+The Gran Camerino E-commerce API is built on Laravel and follows a clean MVC architecture with dedicated service layers for external integrations.
+
+## Laravel MVC structure
+
+The application follows Laravel's Model-View-Controller pattern, adapted for a REST API:
+
+- **Models**: Eloquent ORM models with relationships and business logic
+- **Controllers**: HTTP request handlers in `app/Http/Controllers/`
+- **Services**: External API integrations in `app/Services/`
+- **Middleware**: Authentication and authorization in `app/Http/Middleware/`
+- **Routes**: API endpoint definitions in `routes/api.php`
+
+### Controller organization
+
+Controllers are organized by resource type and follow RESTful conventions:
+
+- `AuthController.php` - User authentication (login, register, logout)
+- `ProductController.php` - Product catalog management
+- `OrderController.php` - Order processing and payment integration
+- `UserController.php` - User management (admin only)
+- `CategoryController.php`, `TeamController.php`, etc. - Resource management
+
+All controllers extend the base `Controller` class and return JSON responses with consistent structure:
+
+```php
+return response()->json([
+    'status' => 'success',
+    'data' => $data
+]);
+```
+
+## Database schema
+
+The application uses UUID primary keys for all models and implements a comprehensive e-commerce schema.
+
+### Core models
+
+#### User model
+
+The `User` model (`app/Models/User.php:14`) implements JWT authentication:
+
+```php
+class User extends Authenticatable implements JWTSubject
+{
+    use HasFactory, HasUuids, Notifiable;
+
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role',
+    ];
+}
+```
+
+**Relationships:**
+- `hasMany(Address::class)` - User addresses (app/Models/User.php:78)
+- `hasMany(Favorite::class)` - Favorited products (app/Models/User.php:86)
+- `hasMany(Order::class)` - User orders (app/Models/User.php:94)
+
+#### Product model
+
+The `Product` model (`app/Models/Product.php:13`) represents sports jerseys:
+
+```php
+class Product extends Model
+{
+    use HasFactory, HasUuids;
+
+    protected $fillable = [
+        'name', 'slug', 'category_id', 'team_id', 
+        'price_usd', 'price_cop', 'description', 'is_active'
+    ];
+}
+```
+
+**Relationships:**
+- `belongsTo(Category::class)` - Product category (app/Models/Product.php:23)
+- `belongsTo(Team::class)` - Sports team (app/Models/Product.php:28)
+- `hasMany(ProductImage::class)` - Product images (app/Models/Product.php:62)
+- `hasMany(ProductVariant::class)` - Size variants (app/Models/Product.php:67)
+- `belongsToMany(SpecialCategory::class)` - Featured collections (app/Models/Product.php:72)
+
+**Pricing:**
+Products store dual currency pricing (`price_usd` and `price_cop`) to support both Wompi (COP) and NOWPayments (USD) payment gateways.
+
+#### ProductVariant model
+
+The `ProductVariant` model (`app/Models/ProductVariant.php:12`) handles size variations:
+
+```php
+class ProductVariant extends Model
+{
+    use HasFactory, HasUuids;
+
+    protected $fillable = ['product_id', 'size_id'];
+
+    public function getFinalPricesAttribute()
+    {
+        return [
+            'usd' => $this->product->price_usd,
+            'cop' => $this->product->price_cop,
+        ];
+    }
+}
+```
+
+**Relationships:**
+- `belongsTo(Product::class)` - Parent product (app/Models/ProductVariant.php:23)
+- `belongsTo(Size::class)` - Size information (app/Models/ProductVariant.php:27)
+- `hasMany(OrderItem::class)` - Order line items (app/Models/ProductVariant.php:50)
+
+#### Order model
+
+The `Order` model (`app/Models/Order.php:12`) manages customer orders:
+
+```php
+class Order extends Model
+{
+    use HasFactory, HasUuids;
+
+    protected $fillable = [
+        'user_id', 'address_id', 'coupon_id',
+        'order_number', 'subtotal', 'tax_amount',
+        'shipping_amount', 'discount_amount', 'total_amount',
+        'status', 'payment_gateway', 'payment_reference',
+        'payment_data', 'paid_at', 'shipped_at', 'delivered_at'
+    ];
+
+    protected $casts = [
+        'payment_data' => 'array',
+        'paid_at' => 'datetime',
+    ];
+}
+```
+
+**Relationships:**
+- `belongsTo(User::class)` - Order owner (app/Models/Order.php:52)
+- `belongsTo(Address::class)` - Shipping address (app/Models/Order.php:57)
+- `belongsTo(Coupon::class)` - Applied discount (app/Models/Order.php:62)
+- `hasMany(OrderItem::class)` - Order line items (app/Models/Order.php:67)
+
+**Auto-generated fields:**
+The model automatically generates unique order numbers on creation:
+
+```php
+static::creating(function ($order) {
+    if (empty($order->order_number)) {
+        $order->order_number = 'ORD-' . strtoupper(uniqid());
+    }
+});
+```
+
+### Supporting models
+
+- **Category** - Product categories (Jerseys, Shorts, etc.)
+- **Team** - Sports teams with leagues
+- **League** - Sports leagues (Premier League, La Liga, etc.)
+- **Size** - Product sizes (S, M, L, XL, etc.)
+- **SpecialCategory** - Featured collections (Best Sellers, New Arrivals)
+- **Country/Continent** - Geographic data for shipping
+- **Address** - User shipping addresses
+- **Coupon** - Discount codes with validation
+- **Favorite** - User wishlists
+
+## Service layer
+
+External integrations are encapsulated in service classes to maintain clean separation of concerns.
+
+### WompiService
+
+Handles Colombian payment gateway integration (`app/Services/WompiService.php:8`):
+
+```php
+class WompiService
+{
+    private string $publicKey;
+    private string $privateKey;
+    private string $integritySecret;
+    private string $baseUrl;
+
+    public function __construct()
+    {
+        $this->publicKey = config('services.wompi.public_key');
+        $this->privateKey = config('services.wompi.private_key');
+        $this->integritySecret = config('services.wompi.integrity_secret');
+        $this->baseUrl = config('services.wompi.url');
+    }
+}
+```
+
+**Key methods:**
+- `generateIntegritySignature()` - Creates SHA256 signatures for transactions (app/Services/WompiService.php:26)
+- `createPaymentData()` - Prepares checkout widget data (app/Services/WompiService.php:75)
+- `buildCheckoutUrl()` - Constructs Wompi payment URLs (app/Services/WompiService.php:131)
+- `verifyEventChecksum()` - Validates webhook signatures (app/Services/WompiService.php:239)
+
+### NOWPaymentsService
+
+Manages cryptocurrency payment processing (`app/Services/NOWPaymentsService.php:8`):
+
+```php
+class NOWPaymentsService
+{
+    private string $apiKey;
+    private string $ipnSecret;
+    private string $baseUrl;
+
+    public function __construct()
+    {
+        $this->apiKey = config('services.nowpayments.api_key');
+        $this->ipnSecret = config('services.nowpayments.ipn_secret');
+        $this->baseUrl = config('services.nowpayments.url');
+    }
+}
+```
+
+**Key methods:**
+- `getAvailableCurrencies()` - Lists supported cryptocurrencies (app/Services/NOWPaymentsService.php:24)
+- `createInvoice()` - Generates crypto payment invoices (app/Services/NOWPaymentsService.php:124)
+- `getPaymentStatus()` - Checks payment completion (app/Services/NOWPaymentsService.php:94)
+- `verifyIPNSignature()` - Validates webhook signatures with HMAC-SHA512 (app/Services/NOWPaymentsService.php:114)
+
+### CloudinaryService
+
+Handles image upload and optimization (`app/Services/CloudinaryService.php:8`):
+
+```php
+class CloudinaryService
+{
+    public static function uploadImage($file, $folder = 'products', $options = [])
+    {
+        $defaultOptions = [
+            'folder' => $folder,
+            'resource_type' => 'image',
+            'quality' => 'auto',
+            'fetch_format' => 'auto',
+        ];
+
+        $result = Cloudinary::upload($file->getRealPath(), $uploadOptions);
+
+        return [
+            'success' => true,
+            'url' => $result->getSecurePath(),
+            'public_id' => $result->getPublicId(),
+        ];
+    }
+}
+```
+
+**Key methods:**
+- `uploadImage()` - Upload product images (app/Services/CloudinaryService.php:17)
+- `deleteImage()` - Remove images by public ID (app/Services/CloudinaryService.php:70)
+- `getOptimizedUrl()` - Generate responsive URLs (app/Services/CloudinaryService.php:112)
+- `getThumbnailUrl()` - Create thumbnails (app/Services/CloudinaryService.php:134)
+
+<Note>
+  All service classes use Laravel's HTTP client for API requests and comprehensive logging for debugging.
+</Note>
+
+## Request flow
+
+A typical API request flows through these layers:
+
+1. **Route** (`routes/api.php`) - Matches URL pattern and applies middleware
+2. **Middleware** - Validates JWT token, checks user role
+3. **Controller** - Validates request data, orchestrates business logic
+4. **Service** (if needed) - Handles external API calls
+5. **Model** - Database operations via Eloquent ORM
+6. **Response** - Returns JSON with consistent structure
+
+Example order creation flow (`app/Http/Controllers/OrderController.php:105`):
+
+```php
+public function store(Request $request): JsonResponse
+{
+    $validated = $request->validate([...]);
+
+    return DB::transaction(function () use ($validated, $request) {
+        // 1. Calculate order totals
+        // 2. Apply coupon if provided
+        // 3. Create order record
+        // 4. Create order items
+        // 5. Generate payment link (Wompi or NOWPayments)
+        // 6. Return order with checkout URL
+    });
+}
+```

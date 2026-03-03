@@ -1,0 +1,226 @@
+---
+title: Update Product
+api: PUT /api/products/{product}
+---
+
+Update an existing product. This endpoint requires admin authentication.
+
+<Warning>
+  This endpoint requires admin privileges. Only authenticated users with admin role can update products.
+</Warning>
+
+## Authentication
+
+Requires valid Bearer token with admin privileges.
+
+## Path Parameters
+
+<ParamField path="product" type="string" required>
+  Product UUID
+</ParamField>
+
+## Request Body
+
+All fields are optional. Only include fields you want to update.
+
+<ParamField body="name" type="string">
+  Product name (max 255 characters)
+</ParamField>
+
+<ParamField body="slug" type="string">
+  URL-friendly unique identifier (max 255 characters)
+</ParamField>
+
+<ParamField body="category_id" type="string">
+  Category UUID (must exist in categories table)
+</ParamField>
+
+<ParamField body="team_id" type="string">
+  Team UUID (must exist in teams table)
+</ParamField>
+
+<ParamField body="price_usd" type="number">
+  Price in USD (minimum: 0)
+</ParamField>
+
+<ParamField body="price_cop" type="number">
+  Price in Colombian Pesos (minimum: 0)
+</ParamField>
+
+<ParamField body="description" type="string">
+  Product description (nullable)
+</ParamField>
+
+<ParamField body="images" type="array">
+  Array of image objects or URLs. **Warning:** This replaces all existing images.
+  
+  <ParamField body="url" type="string" required>
+    Image URL
+  </ParamField>
+  
+  <ParamField body="is_primary" type="boolean">
+    Whether this is the primary image (default: false)
+  </ParamField>
+</ParamField>
+
+<ParamField body="variants" type="array">
+  Array of size variants. **Warning:** This replaces all existing variants.
+  
+  <ParamField body="size_id" type="string" required>
+    Size UUID (must exist in sizes table)
+  </ParamField>
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Updated product object with relationships loaded (category, team, images, variants, specialCategories)
+</ResponseField>
+
+<RequestExample>
+```bash Update Price
+curl -X PUT "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "price_usd": 99.99,
+    "price_cop": 399960
+  }'
+```
+
+```bash Update Multiple Fields
+curl -X PUT "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "name": "FC Barcelona Home Jersey 2024 - Updated",
+    "description": "Official FC Barcelona home jersey with updated details",
+    "price_usd": 89.99,
+    "price_cop": 359960
+  }'
+```
+
+```bash Replace Images
+curl -X PUT "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "images": [
+      {
+        "url": "https://storage.grancamerino.com/products/new-image-1.jpg",
+        "is_primary": true
+      },
+      {
+        "url": "https://storage.grancamerino.com/products/new-image-2.jpg"
+      }
+    ]
+  }'
+```
+
+```bash Replace Variants
+curl -X PUT "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "variants": [
+      {"size_id": "123e4567-e89b-12d3-a456-426614174010"},
+      {"size_id": "123e4567-e89b-12d3-a456-426614174011"},
+      {"size_id": "123e4567-e89b-12d3-a456-426614174012"},
+      {"size_id": "123e4567-e89b-12d3-a456-426614174013"}
+    ]
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "FC Barcelona Home Jersey 2024 - Updated",
+    "slug": "fc-barcelona-home-jersey-2024",
+    "description": "Official FC Barcelona home jersey with updated details",
+    "price_usd": 89.99,
+    "price_cop": 359960,
+    "is_active": true,
+    "category_id": "123e4567-e89b-12d3-a456-426614174001",
+    "team_id": "123e4567-e89b-12d3-a456-426614174002",
+    "created_at": "2024-01-15T10:30:00.000000Z",
+    "updated_at": "2024-03-03T15:20:00.000000Z",
+    "category": {
+      "id": "123e4567-e89b-12d3-a456-426614174001",
+      "name": "Club Jerseys",
+      "slug": "club-jerseys"
+    },
+    "team": {
+      "id": "123e4567-e89b-12d3-a456-426614174002",
+      "name": "FC Barcelona",
+      "slug": "fc-barcelona"
+    },
+    "images": [
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174005",
+        "product_id": "123e4567-e89b-12d3-a456-426614174000",
+        "url": "https://storage.grancamerino.com/products/barcelona-home-2024.jpg",
+        "is_primary": true
+      }
+    ],
+    "variants": [
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174010",
+        "product_id": "123e4567-e89b-12d3-a456-426614174000",
+        "size_id": "123e4567-e89b-12d3-a456-426614174011",
+        "size": {
+          "id": "123e4567-e89b-12d3-a456-426614174011",
+          "name": "Medium",
+          "code": "M"
+        }
+      },
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174012",
+        "product_id": "123e4567-e89b-12d3-a456-426614174000",
+        "size_id": "123e4567-e89b-12d3-a456-426614174013",
+        "size": {
+          "id": "123e4567-e89b-12d3-a456-426614174013",
+          "name": "Large",
+          "code": "L"
+        }
+      }
+    ],
+    "special_categories": []
+  }
+}
+```
+
+```json Validation Error (422)
+{
+  "message": "The slug has already been taken.",
+  "errors": {
+    "slug": [
+      "The slug has already been taken."
+    ]
+  }
+}
+```
+
+```json Not Found (404)
+{
+  "message": "No query results for model [App\\Models\\Product] 123e4567-e89b-12d3-a456-426614174999"
+}
+```
+
+```json Unauthorized (401)
+{
+  "message": "Unauthenticated."
+}
+```
+</ResponseExample>

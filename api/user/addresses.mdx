@@ -1,0 +1,482 @@
+---
+title: "Addresses"
+description: "Manage user shipping and billing addresses"
+---
+
+## Overview
+
+The Addresses API allows authenticated users to manage their delivery addresses. Users can create, update, delete, and set primary addresses for order checkout.
+
+**Authentication:** All endpoints require Bearer token authentication.
+
+---
+
+## List Addresses
+
+<api method="GET" path="/api/addresses" auth="required">
+Get all addresses for the authenticated user.
+</api>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="array">
+Array of address objects
+  <Expandable title="Address object">
+    <ResponseField name="id" type="string">UUID of the address</ResponseField>
+    <ResponseField name="user_id" type="string">UUID of the user</ResponseField>
+    <ResponseField name="first_name" type="string">Recipient first name</ResponseField>
+    <ResponseField name="last_name" type="string">Recipient last name</ResponseField>
+    <ResponseField name="phone" type="string">Contact phone number</ResponseField>
+    <ResponseField name="gender" type="string">Gender (male, female, other)</ResponseField>
+    <ResponseField name="street" type="string">Street address line 1</ResponseField>
+    <ResponseField name="street_line_2" type="string | null">Street address line 2 (optional)</ResponseField>
+    <ResponseField name="city" type="string">City name</ResponseField>
+    <ResponseField name="state" type="string">State or province</ResponseField>
+    <ResponseField name="postal_code" type="string">Postal/ZIP code</ResponseField>
+    <ResponseField name="country" type="string">Country name</ResponseField>
+    <ResponseField name="is_primary" type="boolean">Whether this is the primary address</ResponseField>
+    <ResponseField name="created_at" type="string">ISO 8601 timestamp</ResponseField>
+    <ResponseField name="updated_at" type="string">ISO 8601 timestamp</ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET https://api.grancamerino.com/api/addresses \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a",
+      "user_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6b",
+      "first_name": "Juan",
+      "last_name": "Rodríguez",
+      "phone": "+57 300 123 4567",
+      "gender": "male",
+      "street": "Calle 100 # 15-45",
+      "street_line_2": "Apt 302",
+      "city": "Bogotá",
+      "state": "Cundinamarca",
+      "postal_code": "110111",
+      "country": "Colombia",
+      "is_primary": true,
+      "created_at": "2024-01-15T10:30:00.000000Z",
+      "updated_at": "2024-01-15T10:30:00.000000Z"
+    }
+  ]
+}
+```
+
+---
+
+## Create Address
+
+<api method="POST" path="/api/addresses" auth="required">
+Create a new address for the authenticated user.
+</api>
+
+### Request Body
+
+<ParamField name="first_name" type="string" required>
+Recipient first name (max 255 characters)
+</ParamField>
+
+<ParamField name="last_name" type="string" required>
+Recipient last name (max 255 characters)
+</ParamField>
+
+<ParamField name="phone" type="string" required>
+Contact phone number (max 20 characters)
+</ParamField>
+
+<ParamField name="gender" type="string" required>
+Gender. Must be one of: `male`, `female`, `other`
+</ParamField>
+
+<ParamField name="street" type="string" required>
+Street address line 1 (max 255 characters)
+</ParamField>
+
+<ParamField name="street_line_2" type="string">
+Street address line 2 - optional (max 255 characters)
+</ParamField>
+
+<ParamField name="city" type="string" required>
+City name (max 255 characters)
+</ParamField>
+
+<ParamField name="state" type="string" required>
+State or province (max 255 characters)
+</ParamField>
+
+<ParamField name="postal_code" type="string" required>
+Postal or ZIP code (max 20 characters)
+</ParamField>
+
+<ParamField name="country" type="string" required>
+Country name (max 255 characters)
+</ParamField>
+
+<ParamField name="is_primary" type="boolean" default="false">
+Set as primary address. If true, other addresses will be set to non-primary automatically.
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+Success message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+The created address object
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.grancamerino.com/api/addresses \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "first_name": "María",
+    "last_name": "García",
+    "phone": "+57 301 987 6543",
+    "gender": "female",
+    "street": "Carrera 7 # 50-20",
+    "street_line_2": "Oficina 501",
+    "city": "Medellín",
+    "state": "Antioquia",
+    "postal_code": "050001",
+    "country": "Colombia",
+    "is_primary": true
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "message": "Address created successfully",
+  "data": {
+    "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f7c",
+    "user_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6b",
+    "first_name": "María",
+    "last_name": "García",
+    "phone": "+57 301 987 6543",
+    "gender": "female",
+    "street": "Carrera 7 # 50-20",
+    "street_line_2": "Oficina 501",
+    "city": "Medellín",
+    "state": "Antioquia",
+    "postal_code": "050001",
+    "country": "Colombia",
+    "is_primary": true,
+    "created_at": "2024-01-20T14:25:00.000000Z",
+    "updated_at": "2024-01-20T14:25:00.000000Z"
+  }
+}
+```
+
+---
+
+## Get Address
+
+<api method="GET" path="/api/addresses/{id}" auth="required">
+Get a specific address by ID. Users can only access their own addresses.
+</api>
+
+### Path Parameters
+
+<ParamField name="id" type="string" required>
+UUID of the address
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success" or "error")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+The address object (if found)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+Error message (if address not found or doesn't belong to user)
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET https://api.grancamerino.com/api/addresses/9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a",
+    "user_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6b",
+    "first_name": "Juan",
+    "last_name": "Rodríguez",
+    "phone": "+57 300 123 4567",
+    "gender": "male",
+    "street": "Calle 100 # 15-45",
+    "street_line_2": "Apt 302",
+    "city": "Bogotá",
+    "state": "Cundinamarca",
+    "postal_code": "110111",
+    "country": "Colombia",
+    "is_primary": true,
+    "created_at": "2024-01-15T10:30:00.000000Z",
+    "updated_at": "2024-01-15T10:30:00.000000Z"
+  }
+}
+```
+
+---
+
+## Update Address
+
+<api method="PUT" path="/api/addresses/{id}" auth="required">
+Update an existing address. Users can only update their own addresses. All fields are optional.
+</api>
+
+### Path Parameters
+
+<ParamField name="id" type="string" required>
+UUID of the address to update
+</ParamField>
+
+### Request Body
+
+<ParamField name="first_name" type="string">
+Recipient first name (max 255 characters)
+</ParamField>
+
+<ParamField name="last_name" type="string">
+Recipient last name (max 255 characters)
+</ParamField>
+
+<ParamField name="phone" type="string">
+Contact phone number (max 20 characters)
+</ParamField>
+
+<ParamField name="gender" type="string">
+Gender. Must be one of: `male`, `female`, `other`
+</ParamField>
+
+<ParamField name="street" type="string">
+Street address line 1 (max 255 characters)
+</ParamField>
+
+<ParamField name="street_line_2" type="string">
+Street address line 2 (max 255 characters)
+</ParamField>
+
+<ParamField name="city" type="string">
+City name (max 255 characters)
+</ParamField>
+
+<ParamField name="state" type="string">
+State or province (max 255 characters)
+</ParamField>
+
+<ParamField name="postal_code" type="string">
+Postal or ZIP code (max 20 characters)
+</ParamField>
+
+<ParamField name="country" type="string">
+Country name (max 255 characters)
+</ParamField>
+
+<ParamField name="is_primary" type="boolean">
+Set as primary address
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success" or "error")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+Success or error message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+The updated address object
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X PUT https://api.grancamerino.com/api/addresses/9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "phone": "+57 300 999 8888",
+    "street_line_2": "Apt 304"
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "message": "Address updated successfully",
+  "data": {
+    "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a",
+    "user_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6b",
+    "first_name": "Juan",
+    "last_name": "Rodríguez",
+    "phone": "+57 300 999 8888",
+    "gender": "male",
+    "street": "Calle 100 # 15-45",
+    "street_line_2": "Apt 304",
+    "city": "Bogotá",
+    "state": "Cundinamarca",
+    "postal_code": "110111",
+    "country": "Colombia",
+    "is_primary": true,
+    "created_at": "2024-01-15T10:30:00.000000Z",
+    "updated_at": "2024-01-20T15:10:00.000000Z"
+  }
+}
+```
+
+---
+
+## Set Primary Address
+
+<api method="PATCH" path="/api/addresses/{id}/set-primary" auth="required">
+Set an address as the primary address. This automatically sets all other addresses to non-primary.
+</api>
+
+### Path Parameters
+
+<ParamField name="id" type="string" required>
+UUID of the address to set as primary
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success" or "error")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+Success or error message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+The updated address object with is_primary set to true
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X PATCH https://api.grancamerino.com/api/addresses/9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f7c/set-primary \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "message": "Address set as primary successfully",
+  "data": {
+    "id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f7c",
+    "user_id": "9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6b",
+    "first_name": "María",
+    "last_name": "García",
+    "phone": "+57 301 987 6543",
+    "gender": "female",
+    "street": "Carrera 7 # 50-20",
+    "street_line_2": "Oficina 501",
+    "city": "Medellín",
+    "state": "Antioquia",
+    "postal_code": "050001",
+    "country": "Colombia",
+    "is_primary": true,
+    "created_at": "2024-01-20T14:25:00.000000Z",
+    "updated_at": "2024-01-20T15:30:00.000000Z"
+  }
+}
+```
+
+---
+
+## Delete Address
+
+<api method="DELETE" path="/api/addresses/{id}" auth="required">
+Delete an address. Users can only delete their own addresses.
+</api>
+
+### Path Parameters
+
+<ParamField name="id" type="string" required>
+UUID of the address to delete
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+Response status ("success" or "error")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+Success or error message
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X DELETE https://api.grancamerino.com/api/addresses/9d4e8f12-3c4a-4b5e-8f9a-1b2c3d4e5f6a \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+```
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "message": "Address deleted successfully"
+}
+```
+
+### Error Response (Not Found)
+
+```json
+{
+  "status": "error",
+  "message": "Address not found"
+}
+```

@@ -1,0 +1,225 @@
+---
+title: Product Images
+---
+
+Manage product images. All image endpoints require admin authentication.
+
+<Warning>
+  All image management endpoints require admin privileges.
+</Warning>
+
+## Add Image
+
+<api>POST /api/products/{product}/images</api>
+
+Add a new image to a product.
+
+### Path Parameters
+
+<ParamField path="product" type="string" required>
+  Product UUID
+</ParamField>
+
+### Request Body
+
+<ParamField body="url" type="string" required>
+  Image URL (must be a valid URL)
+</ParamField>
+
+<ParamField body="is_primary" type="boolean">
+  Whether this image should be the primary image (default: false). If set to true, all other images will be set to non-primary.
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status: `success`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Created image object
+  
+  <ResponseField name="id" type="string">
+    Image UUID
+  </ResponseField>
+  
+  <ResponseField name="product_id" type="string">
+    Product UUID
+  </ResponseField>
+  
+  <ResponseField name="url" type="string">
+    Image URL
+  </ResponseField>
+  
+  <ResponseField name="is_primary" type="boolean">
+    Whether this is the primary image
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash Add Image
+curl -X POST "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000/images" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "url": "https://storage.grancamerino.com/products/barcelona-detail.jpg",
+    "is_primary": false
+  }'
+```
+
+```bash Add Primary Image
+curl -X POST "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000/images" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "url": "https://storage.grancamerino.com/products/barcelona-new-primary.jpg",
+    "is_primary": true
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success Response (201)
+{
+  "status": "success",
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174060",
+    "product_id": "123e4567-e89b-12d3-a456-426614174000",
+    "url": "https://storage.grancamerino.com/products/barcelona-detail.jpg",
+    "is_primary": false,
+    "created_at": "2024-03-03T16:30:00.000000Z",
+    "updated_at": "2024-03-03T16:30:00.000000Z"
+  }
+}
+```
+
+```json Validation Error (422)
+{
+  "message": "The url field must be a valid URL.",
+  "errors": {
+    "url": [
+      "The url field must be a valid URL."
+    ]
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Set Primary Image
+
+<api>PATCH /api/products/{product}/images/{image}/primary</api>
+
+Set a specific image as the primary image for a product. All other images will be set to non-primary.
+
+### Path Parameters
+
+<ParamField path="product" type="string" required>
+  Product UUID
+</ParamField>
+
+<ParamField path="image" type="string" required>
+  Image UUID to set as primary
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status: `success`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Updated image object with is_primary set to true
+</ResponseField>
+
+<RequestExample>
+```bash Set Primary Image
+curl -X PATCH "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000/images/123e4567-e89b-12d3-a456-426614174060/primary" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Accept: application/json"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174060",
+    "product_id": "123e4567-e89b-12d3-a456-426614174000",
+    "url": "https://storage.grancamerino.com/products/barcelona-detail.jpg",
+    "is_primary": true,
+    "created_at": "2024-03-03T16:30:00.000000Z",
+    "updated_at": "2024-03-03T16:35:00.000000Z"
+  }
+}
+```
+
+```json Image Mismatch (404)
+{
+  "status": "error",
+  "message": "Image does not belong to this product"
+}
+```
+</ResponseExample>
+
+---
+
+## Remove Image
+
+<api>DELETE /api/products/{product}/images/{image}</api>
+
+Remove an image from a product.
+
+### Path Parameters
+
+<ParamField path="product" type="string" required>
+  Product UUID
+</ParamField>
+
+<ParamField path="image" type="string" required>
+  Image UUID to remove
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status: `success`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Confirmation message: `Image removed successfully`
+</ResponseField>
+
+<RequestExample>
+```bash Remove Image
+curl -X DELETE "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000/images/123e4567-e89b-12d3-a456-426614174060" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Accept: application/json"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "message": "Image removed successfully"
+}
+```
+
+```json Image Mismatch (404)
+{
+  "status": "error",
+  "message": "Image does not belong to this product"
+}
+```
+
+```json Not Found (404)
+{
+  "message": "No query results for model [App\\Models\\ProductImage] 123e4567-e89b-12d3-a456-426614174999"
+}
+```
+</ResponseExample>

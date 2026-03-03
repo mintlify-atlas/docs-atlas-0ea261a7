@@ -1,0 +1,302 @@
+---
+title: 'Special Categories'
+description: 'Manage special product categories and collections'
+---
+
+<Note>
+  **Public Access:** GET endpoints are publicly accessible
+  
+  **Admin Only:** POST, PUT, DELETE require authentication and admin privileges
+</Note>
+
+## List All Special Categories
+
+<api method="GET" url="https://api.grancamerino.com/api/special-categories" />
+
+Retrieve all special categories. Special categories are used to group products by special collections, promotions, or featured items.
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of special category objects
+  
+  <Expandable title="Special Category Object">
+    <ResponseField name="id" type="string">
+      UUID of the special category
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Special category name (e.g., "New Arrivals", "Best Sellers", "Featured")
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp
+    </ResponseField>
+    
+    <ResponseField name="updated_at" type="string">
+      ISO 8601 timestamp
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl https://api.grancamerino.com/api/special-categories
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b701",
+      "name": "New Arrivals",
+      "created_at": "2024-01-15T11:10:00.000000Z",
+      "updated_at": "2024-01-15T11:10:00.000000Z"
+    },
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b702",
+      "name": "Best Sellers",
+      "created_at": "2024-01-15T11:11:00.000000Z",
+      "updated_at": "2024-01-15T11:11:00.000000Z"
+    },
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b703",
+      "name": "Featured",
+      "created_at": "2024-01-15T11:12:00.000000Z",
+      "updated_at": "2024-01-15T11:12:00.000000Z"
+    },
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b704",
+      "name": "Limited Edition",
+      "created_at": "2024-01-15T11:13:00.000000Z",
+      "updated_at": "2024-01-15T11:13:00.000000Z"
+    }
+  ]
+}
+```
+</ResponseExample>
+
+---
+
+## Get Single Special Category
+
+<api method="GET" url="https://api.grancamerino.com/api/special-categories/{id}" />
+
+Retrieve a specific special category by ID.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Special category UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Special category object (same structure as list endpoint)
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl https://api.grancamerino.com/api/special-categories/9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b701
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": {
+    "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b701",
+    "name": "New Arrivals",
+    "created_at": "2024-01-15T11:10:00.000000Z",
+    "updated_at": "2024-01-15T11:10:00.000000Z"
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Create Special Category
+
+<api method="POST" url="https://api.grancamerino.com/api/special-categories" auth="Bearer" />
+
+<Note type="warning">
+  **Admin Only** - Requires authentication with admin privileges
+</Note>
+
+Create a new special category for organizing products.
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with admin privileges
+</ParamField>
+
+### Body Parameters
+
+<ParamField body="name" type="string" required>
+  Special category name (max 255 characters)
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Created special category object
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST https://api.grancamerino.com/api/special-categories \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Summer Collection 2024"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": {
+    "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b705",
+    "name": "Summer Collection 2024",
+    "created_at": "2024-03-03T15:20:00.000000Z",
+    "updated_at": "2024-03-03T15:20:00.000000Z"
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Update Special Category
+
+<api method="PUT" url="https://api.grancamerino.com/api/special-categories/{id}" auth="Bearer" />
+
+<Note type="warning">
+  **Admin Only** - Requires authentication with admin privileges
+</Note>
+
+Update an existing special category.
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with admin privileges
+</ParamField>
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Special category UUID
+</ParamField>
+
+### Body Parameters
+
+<ParamField body="name" type="string" required>
+  Special category name (max 255 characters)
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Updated special category object
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X PUT https://api.grancamerino.com/api/special-categories/9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b705 \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Spring/Summer 2024"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": {
+    "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b705",
+    "name": "Spring/Summer 2024",
+    "created_at": "2024-03-03T15:20:00.000000Z",
+    "updated_at": "2024-03-03T15:22:00.000000Z"
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Delete Special Category
+
+<api method="DELETE" url="https://api.grancamerino.com/api/special-categories/{id}" auth="Bearer" />
+
+<Note type="warning">
+  **Admin Only** - Requires authentication with admin privileges
+</Note>
+
+Delete a special category from the system.
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with admin privileges
+</ParamField>
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Special category UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Confirmation message
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X DELETE https://api.grancamerino.com/api/special-categories/9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b705 \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "message": "Special category deleted successfully"
+}
+```
+</ResponseExample>

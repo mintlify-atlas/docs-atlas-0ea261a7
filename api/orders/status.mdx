@@ -1,0 +1,176 @@
+---
+title: "Update Order Status"
+api: "PATCH /api/orders/{order}/status"
+description: "Update the status of an order (Admin only)"
+authMethod: "bearer"
+---
+
+## Authentication
+
+Requires authentication via Bearer token with **admin role**.
+
+## Path Parameters
+
+<ParamField path="order" type="string" required>
+  Order UUID
+</ParamField>
+
+## Request Body
+
+<ParamField body="status" type="string" required>
+  New order status. Must be one of:
+  - `pending` - Order created, awaiting payment
+  - `paid` - Payment confirmed
+  - `preparing` - Order being prepared for shipment
+  - `shipped` - Order has been shipped
+  - `in_transit` - Order is in transit
+  - `delivered` - Order delivered to customer
+  - `cancelled` - Order cancelled
+  - `failed` - Payment failed
+</ParamField>
+
+## Automatic Timestamp Updates
+
+When updating status, the following timestamps are automatically set:
+
+- Setting status to `paid`: Updates `paid_at` if not already set
+- Setting status to `shipped`: Updates `shipped_at` if not already set
+- Setting status to `delivered`: Updates `delivered_at` if not already set
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status (`success`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Success message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Updated order object
+
+  <Expandable title="Order Object">
+    <ResponseField name="id" type="string">
+      Order UUID
+    </ResponseField>
+
+    <ResponseField name="status" type="string">
+      Updated order status
+    </ResponseField>
+
+    <ResponseField name="paid_at" type="string">
+      Timestamp when payment was confirmed (if status is `paid`)
+    </ResponseField>
+
+    <ResponseField name="shipped_at" type="string">
+      Timestamp when order was shipped (if status is `shipped`)
+    </ResponseField>
+
+    <ResponseField name="delivered_at" type="string">
+      Timestamp when order was delivered (if status is `delivered`)
+    </ResponseField>
+
+    <ResponseField name="updated_at" type="string">
+      Timestamp of last update
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash Mark as Shipped
+curl -X PATCH https://api.grancamerino.com/api/orders/9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a/status \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "shipped"
+  }'
+```
+
+```bash Mark as Delivered
+curl -X PATCH https://api.grancamerino.com/api/orders/9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a/status \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "delivered"
+  }'
+```
+
+```bash Mark as Preparing
+curl -X PATCH https://api.grancamerino.com/api/orders/9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a/status \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "preparing"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success - Shipped
+{
+  "status": "success",
+  "message": "Order status updated successfully",
+  "data": {
+    "id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+    "user_id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3b",
+    "order_number": "ORD-65F3A2B1C",
+    "status": "shipped",
+    "paid_at": "2024-01-15T14:30:00Z",
+    "shipped_at": "2024-01-16T10:15:00Z",
+    "delivered_at": null,
+    "updated_at": "2024-01-16T10:15:00Z"
+  }
+}
+```
+
+```json Success - Delivered
+{
+  "status": "success",
+  "message": "Order status updated successfully",
+  "data": {
+    "id": "9d4e8f2a-1b3c-4d5e-6f7a-8b9c0d1e2f3a",
+    "order_number": "ORD-65F3A2B1C",
+    "status": "delivered",
+    "paid_at": "2024-01-15T14:30:00Z",
+    "shipped_at": "2024-01-16T10:15:00Z",
+    "delivered_at": "2024-01-17T15:30:00Z",
+    "updated_at": "2024-01-17T15:30:00Z"
+  }
+}
+```
+
+```json Unauthorized
+{
+  "status": "error",
+  "message": "Unauthorized. Admin access required."
+}
+```
+
+```json Validation Error
+{
+  "message": "The selected status is invalid.",
+  "errors": {
+    "status": [
+      "The selected status is invalid."
+    ]
+  }
+}
+```
+</ResponseExample>
+
+## Status Flow
+
+Typical order status progression:
+
+1. `pending` - Order created, awaiting payment
+2. `paid` - Payment confirmed by webhook
+3. `preparing` - Admin marks order as being prepared
+4. `shipped` - Admin marks order as shipped
+5. `in_transit` - Order in transit (optional)
+6. `delivered` - Order delivered to customer
+
+Alternative flows:
+- `pending` → `failed` - Payment failed
+- `pending` → `cancelled` - Order cancelled before payment
+- `paid` → `cancelled` - Order cancelled after payment (requires refund)

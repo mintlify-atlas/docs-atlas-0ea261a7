@@ -1,0 +1,65 @@
+---
+title: 'Logout'
+description: 'Invalidate the current authentication token'
+---
+
+## POST /api/logout
+
+Invalidates the current JWT token, effectively logging out the authenticated user.
+
+<Note>
+  This endpoint requires authentication. Include the JWT token in the Authorization header.
+</Note>
+
+### Authentication
+
+This endpoint requires a valid JWT token in the Authorization header:
+
+```
+Authorization: Bearer {token}
+```
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message confirming logout.
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.grancamerino.com/api/logout \
+  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..." \
+  -H "Content-Type: application/json"
+```
+
+### Example Response
+
+```json
+{
+  "message": "Successfully logged out"
+}
+```
+
+### Error Responses
+
+#### 401 Unauthorized
+
+Missing or invalid authentication token.
+
+```json
+{
+  "message": "Unauthenticated."
+}
+```
+
+#### 500 Internal Server Error
+
+Failed to invalidate the token.
+
+```json
+{
+  "error": "Failed to logout",
+  "message": "Token has expired and can no longer be refreshed"
+}
+```

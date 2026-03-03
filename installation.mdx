@@ -1,0 +1,368 @@
+---
+title: "Installation"
+description: "Install and configure Gran Camerino E-commerce API"
+---
+
+## Prerequisites
+
+Before installing Gran Camerino API, ensure you have the following installed on your system:
+
+<CardGroup cols={2}>
+  <Card title="PHP 8.2+" icon="php">
+    Required for Laravel 12. Check version with `php --version`
+  </Card>
+  
+  <Card title="Composer" icon="box">
+    PHP dependency manager. Install from [getcomposer.org](https://getcomposer.org)
+  </Card>
+  
+  <Card title="Database" icon="database">
+    SQLite (default) or MySQL/PostgreSQL
+  </Card>
+  
+  <Card title="Node.js & NPM" icon="node-js">
+    Required for frontend assets. Version 18+ recommended
+  </Card>
+</CardGroup>
+
+<Note>
+  The API uses SQLite by default for easy setup. You can configure MySQL or PostgreSQL in production.
+</Note>
+
+## Installation steps
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Gran Camerino API repository to your local machine.
+
+    ```bash
+    git clone https://github.com/your-org/gran-camerino-api.git
+    cd gran-camerino-api
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install PHP dependencies using Composer.
+
+    ```bash
+    composer install
+    ```
+
+    This will install all required packages including:
+    - Laravel Framework 12.x
+    - JWT Auth (`tymon/jwt-auth`)
+    - Cloudinary Laravel SDK (`cloudinary-labs/cloudinary-laravel`)
+  </Step>
+
+  <Step title="Configure environment">
+    Copy the example environment file and generate an application key.
+
+    ```bash
+    cp .env.example .env
+    php artisan key:generate
+    ```
+
+    <Accordion title="View .env configuration options">
+      Update the `.env` file with your configuration:
+
+      ```bash
+      # Application
+      APP_NAME="Gran Camerino API"
+      APP_ENV=local
+      APP_DEBUG=true
+      APP_URL=http://localhost:8000
+
+      # Database (SQLite default)
+      DB_CONNECTION=sqlite
+      # For MySQL, uncomment and configure:
+      # DB_CONNECTION=mysql
+      # DB_HOST=127.0.0.1
+      # DB_PORT=3306
+      # DB_DATABASE=gran_camerino
+      # DB_USERNAME=root
+      # DB_PASSWORD=
+
+      # Cloudinary (for image management)
+      CLOUDINARY_CLOUD_NAME=your_cloud_name
+      CLOUDINARY_API_KEY=your_api_key
+      CLOUDINARY_API_SECRET=your_api_secret
+      CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
+
+      # Wompi Payment Gateway (Colombia)
+      WOMPI_PUBLIC_KEY=pub_test_...
+      WOMPI_PRIVATE_KEY=prv_test_...
+      WOMPI_EVENTS_SECRET=...
+      WOMPI_INTEGRITY_SECRET=...
+      WOMPI_URL=https://production.wompi.co/v1
+
+      # NOWPayments (Cryptocurrency)
+      NOWPAYMENTS_API_KEY=your_api_key
+      NOWPAYMENTS_IPN_SECRET=your_ipn_secret
+      NOWPAYMENTS_URL=https://api.nowpayments.io/v1
+
+      # Frontend URL for redirects
+      FRONTEND_URL=http://localhost:5173
+      WOMPI_REDIRECT_URL=http://localhost:5173/order-confirmation
+      ```
+    </Accordion>
+
+    <Warning>
+      If using SQLite, make sure the database file exists:
+      ```bash
+      touch database/database.sqlite
+      ```
+    </Warning>
+  </Step>
+
+  <Step title="Generate JWT secret">
+    Generate the JWT authentication secret key.
+
+    ```bash
+    php artisan jwt:secret
+    ```
+
+    This will add `JWT_SECRET` to your `.env` file automatically.
+  </Step>
+
+  <Step title="Run database migrations">
+    Create all necessary database tables.
+
+    ```bash
+    php artisan migrate
+    ```
+
+    This will create tables for:
+    - Users and authentication
+    - Products, categories, and teams
+    - Orders and order items
+    - Addresses and favorites
+    - Coupons and payments
+    - Geographic data (continents, countries, leagues)
+
+    <Tip>
+      Use `php artisan migrate:fresh` to reset the database if needed (this will delete all data).
+    </Tip>
+  </Step>
+
+  <Step title="Seed the database (optional)">
+    Populate the database with sample data for testing.
+
+    ```bash
+    php artisan db:seed
+    ```
+
+    This will create:
+    - Sample continents, countries, and leagues
+    - Product categories and sizes
+    - Teams and special categories
+    - Sample products with images and variants
+    - Test coupons
+
+    <Note>
+      Seeding is optional but recommended for development and testing.
+    </Note>
+  </Step>
+
+  <Step title="Install frontend dependencies">
+    Install Node.js dependencies for asset compilation.
+
+    ```bash
+    npm install
+    npm run build
+    ```
+  </Step>
+
+  <Step title="Start the development server">
+    Launch the Laravel development server.
+
+    ```bash
+    php artisan serve
+    ```
+
+    The API will be available at `http://localhost:8000`
+
+    <Tip>
+      For a complete development environment with queue workers and logs, use:
+      ```bash
+      composer dev
+      ```
+      This runs the server, queue listener, log viewer (Pail), and Vite concurrently.
+    </Tip>
+  </Step>
+</Steps>
+
+## Verify installation
+
+Test that the API is running correctly:
+
+```bash
+curl http://localhost:8000/api/products
+```
+
+You should receive a JSON response with the product list (may be empty if you didn't seed).
+
+## Production deployment
+
+For production environments, follow these additional steps:
+
+<AccordionGroup>
+  <Accordion title="Configure database" icon="database">
+    Use MySQL or PostgreSQL instead of SQLite.
+
+    ```bash
+    # In .env
+    DB_CONNECTION=mysql
+    DB_HOST=your-db-host
+    DB_PORT=3306
+    DB_DATABASE=gran_camerino
+    DB_USERNAME=your-username
+    DB_PASSWORD=your-secure-password
+    ```
+  </Accordion>
+
+  <Accordion title="Optimize performance" icon="gauge-high">
+    Run Laravel optimization commands:
+
+    ```bash
+    php artisan config:cache
+    php artisan route:cache
+    php artisan view:cache
+    composer install --optimize-autoloader --no-dev
+    ```
+  </Accordion>
+
+  <Accordion title="Set up queue workers" icon="list-check">
+    Configure and run queue workers for background jobs:
+
+    ```bash
+    php artisan queue:work --tries=3 --timeout=90
+    ```
+
+    Use a process manager like Supervisor to keep workers running.
+  </Accordion>
+
+  <Accordion title="Configure web server" icon="server">
+    Set up Nginx or Apache to serve the application.
+
+    **Nginx example:**
+    ```nginx
+    server {
+        listen 80;
+        server_name api.grancamerino.com;
+        root /path/to/gran-camerino-api/public;
+
+        add_header X-Frame-Options "SAMEORIGIN";
+        add_header X-Content-Type-Options "nosniff";
+
+        index index.php;
+
+        charset utf-8;
+
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+            fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+            include fastcgi_params;
+        }
+
+        location ~ /\.(?!well-known).* {
+            deny all;
+        }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Enable HTTPS" icon="lock">
+    Use Let's Encrypt for free SSL certificates:
+
+    ```bash
+    sudo certbot --nginx -d api.grancamerino.com
+    ```
+  </Accordion>
+
+  <Accordion title="Set environment to production" icon="shield-check">
+    Update your `.env` file:
+
+    ```bash
+    APP_ENV=production
+    APP_DEBUG=false
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Environment variables reference
+
+Key environment variables you should configure:
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `APP_KEY` | Laravel encryption key | Yes |
+| `JWT_SECRET` | JWT signing secret | Yes |
+| `DB_CONNECTION` | Database driver (sqlite, mysql, pgsql) | Yes |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name | For images |
+| `CLOUDINARY_API_KEY` | Cloudinary API key | For images |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret | For images |
+| `WOMPI_PUBLIC_KEY` | Wompi public key | For payments |
+| `WOMPI_PRIVATE_KEY` | Wompi private key | For payments |
+| `NOWPAYMENTS_API_KEY` | NOWPayments API key | For crypto |
+| `FRONTEND_URL` | Frontend application URL | For redirects |
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Database connection errors" icon="triangle-exclamation">
+    If using SQLite, ensure the database file exists:
+    ```bash
+    touch database/database.sqlite
+    ```
+
+    For MySQL/PostgreSQL, verify your credentials and that the database exists.
+  </Accordion>
+
+  <Accordion title="Permission errors" icon="lock">
+    Ensure storage and cache directories are writable:
+    ```bash
+    chmod -R 775 storage bootstrap/cache
+    chown -R www-data:www-data storage bootstrap/cache
+    ```
+  </Accordion>
+
+  <Accordion title="Composer dependency issues" icon="box">
+    Clear Composer cache and reinstall:
+    ```bash
+    composer clear-cache
+    rm -rf vendor composer.lock
+    composer install
+    ```
+  </Accordion>
+
+  <Accordion title="JWT errors" icon="key">
+    Regenerate the JWT secret:
+    ```bash
+    php artisan jwt:secret --force
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quick start" icon="rocket" href="/quickstart">
+    Make your first API calls and test the installation.
+  </Card>
+  
+  <Card title="Authentication" icon="key" href="/concepts/authentication">
+    Learn how to authenticate users with JWT.
+  </Card>
+  
+  <Card title="API Reference" icon="book" href="/api/auth/register">
+    Explore all available endpoints.
+  </Card>
+  
+  <Card title="Payment Setup" icon="credit-card" href="/concepts/payment-processing">
+    Configure Wompi and NOWPayments.
+  </Card>
+</CardGroup>

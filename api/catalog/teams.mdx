@@ -1,0 +1,494 @@
+---
+title: 'Teams'
+description: 'Manage sports teams (clubs and national teams)'
+---
+
+<Note>
+  **Public Access:** GET endpoints are publicly accessible with filtering options
+  
+  **Admin Only:** POST, PUT, DELETE require authentication and admin privileges
+</Note>
+
+## List All Teams
+
+<api method="GET" url="https://api.grancamerino.com/api/teams" />
+
+Retrieve all teams with optional filtering. Teams are returned with their related country and league data.
+
+### Query Parameters
+
+<ParamField query="type" type="string" optional>
+  Filter by team type: `club` or `national_team`
+</ParamField>
+
+<ParamField query="country_id" type="string" optional>
+  Filter by country UUID
+</ParamField>
+
+<ParamField query="league_id" type="string" optional>
+  Filter by league UUID
+</ParamField>
+
+<ParamField query="search" type="string" optional>
+  Search teams by name (partial match)
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of team objects, ordered alphabetically by name
+  
+  <Expandable title="Team Object">
+    <ResponseField name="id" type="string">
+      UUID of the team
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Team name (e.g., "Real Madrid", "Brazil")
+    </ResponseField>
+    
+    <ResponseField name="type" type="string">
+      Team type: `club` or `national_team`
+    </ResponseField>
+    
+    <ResponseField name="country_id" type="string">
+      UUID of the associated country
+    </ResponseField>
+    
+    <ResponseField name="league_id" type="string" optional>
+      UUID of the associated league (for clubs)
+    </ResponseField>
+    
+    <ResponseField name="image_url" type="string" optional>
+      URL to team logo/badge
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp
+    </ResponseField>
+    
+    <ResponseField name="updated_at" type="string">
+      ISO 8601 timestamp
+    </ResponseField>
+    
+    <ResponseField name="country" type="object">
+      Related country object with continent data
+      
+      <Expandable title="Country Object">
+        <ResponseField name="id" type="string">
+          Country UUID
+        </ResponseField>
+        <ResponseField name="name" type="string">
+          Country name
+        </ResponseField>
+        <ResponseField name="continent_id" type="string">
+          Continent UUID
+        </ResponseField>
+        <ResponseField name="continent" type="object">
+          Continent object with id and name
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="league" type="object" optional>
+      Related league object (for club teams)
+      
+      <Expandable title="League Object">
+        <ResponseField name="id" type="string">
+          League UUID
+        </ResponseField>
+        <ResponseField name="name" type="string">
+          League name
+        </ResponseField>
+        <ResponseField name="country_id" type="string">
+          Country UUID
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash All Teams
+curl https://api.grancamerino.com/api/teams
+```
+
+```bash Filter by Type
+curl "https://api.grancamerino.com/api/teams?type=club"
+```
+
+```bash Filter by League
+curl "https://api.grancamerino.com/api/teams?league_id=9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201"
+```
+
+```bash Search by Name
+curl "https://api.grancamerino.com/api/teams?search=Real"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b301",
+      "name": "Real Madrid",
+      "type": "club",
+      "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+      "league_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201",
+      "image_url": "https://cdn.grancamerino.com/teams/real-madrid.png",
+      "created_at": "2024-01-15T10:30:00.000000Z",
+      "updated_at": "2024-01-15T10:30:00.000000Z",
+      "country": {
+        "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+        "name": "Spain",
+        "continent_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b501",
+        "continent": {
+          "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b501",
+          "name": "Europe"
+        }
+      },
+      "league": {
+        "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201",
+        "name": "La Liga",
+        "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401"
+      }
+    },
+    {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b302",
+      "name": "Brazil",
+      "type": "national_team",
+      "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b402",
+      "league_id": null,
+      "image_url": "https://cdn.grancamerino.com/teams/brazil.png",
+      "created_at": "2024-01-15T10:35:00.000000Z",
+      "updated_at": "2024-01-15T10:35:00.000000Z",
+      "country": {
+        "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b402",
+        "name": "Brazil",
+        "continent_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b502",
+        "continent": {
+          "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b502",
+          "name": "South America"
+        }
+      },
+      "league": null
+    }
+  ]
+}
+```
+</ResponseExample>
+
+---
+
+## Get Single Team
+
+<api method="GET" url="https://api.grancamerino.com/api/teams/{id}" />
+
+Retrieve a specific team by ID with related country and league data.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Team UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Team object with relationships (same structure as list endpoint)
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl https://api.grancamerino.com/api/teams/9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b301
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": {
+    "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b301",
+    "name": "Real Madrid",
+    "type": "club",
+    "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+    "league_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201",
+    "image_url": "https://cdn.grancamerino.com/teams/real-madrid.png",
+    "created_at": "2024-01-15T10:30:00.000000Z",
+    "updated_at": "2024-01-15T10:30:00.000000Z",
+    "country": {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+      "name": "Spain",
+      "continent_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b501"
+    },
+    "league": {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201",
+      "name": "La Liga",
+      "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401"
+    }
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Create Team
+
+<api method="POST" url="https://api.grancamerino.com/api/teams" auth="Bearer" />
+
+<Note type="warning">
+  **Admin Only** - Requires authentication with admin privileges
+</Note>
+
+Create a new team (club or national team).
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with admin privileges
+</ParamField>
+
+### Body Parameters
+
+<ParamField body="name" type="string" required>
+  Team name (max 255 characters)
+</ParamField>
+
+<ParamField body="type" type="string" required>
+  Team type: `club` or `national_team`
+</ParamField>
+
+<ParamField body="country_id" type="string" required>
+  UUID of the associated country
+</ParamField>
+
+<ParamField body="league_id" type="string" optional>
+  UUID of the associated league (typically for club teams)
+</ParamField>
+
+<ParamField body="image_url" type="string" optional>
+  URL to team logo/badge (must be valid URL)
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Created team object with relationships
+</ResponseField>
+
+<RequestExample>
+```bash Club Team
+curl -X POST https://api.grancamerino.com/api/teams \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "FC Barcelona",
+    "type": "club",
+    "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+    "league_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201",
+    "image_url": "https://cdn.grancamerino.com/teams/barcelona.png"
+  }'
+```
+
+```bash National Team
+curl -X POST https://api.grancamerino.com/api/teams \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Argentina",
+    "type": "national_team",
+    "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b403",
+    "image_url": "https://cdn.grancamerino.com/teams/argentina.png"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": {
+    "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b303",
+    "name": "FC Barcelona",
+    "type": "club",
+    "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+    "league_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201",
+    "image_url": "https://cdn.grancamerino.com/teams/barcelona.png",
+    "created_at": "2024-03-03T14:30:00.000000Z",
+    "updated_at": "2024-03-03T14:30:00.000000Z",
+    "country": {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+      "name": "Spain",
+      "continent_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b501"
+    },
+    "league": {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201",
+      "name": "La Liga",
+      "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401"
+    }
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Update Team
+
+<api method="PUT" url="https://api.grancamerino.com/api/teams/{id}" auth="Bearer" />
+
+<Note type="warning">
+  **Admin Only** - Requires authentication with admin privileges
+</Note>
+
+Update an existing team.
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with admin privileges
+</ParamField>
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Team UUID
+</ParamField>
+
+### Body Parameters
+
+<ParamField body="name" type="string" optional>
+  Team name (max 255 characters)
+</ParamField>
+
+<ParamField body="type" type="string" optional>
+  Team type: `club` or `national_team`
+</ParamField>
+
+<ParamField body="country_id" type="string" optional>
+  UUID of the associated country
+</ParamField>
+
+<ParamField body="league_id" type="string" optional>
+  UUID of the associated league (nullable)
+</ParamField>
+
+<ParamField body="image_url" type="string" optional>
+  URL to team logo/badge (nullable)
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Updated team object with relationships
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X PUT https://api.grancamerino.com/api/teams/9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b303 \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "FC Barcelona (Official)",
+    "image_url": "https://cdn.grancamerino.com/teams/barcelona-new.png"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "data": {
+    "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b303",
+    "name": "FC Barcelona (Official)",
+    "type": "club",
+    "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+    "league_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201",
+    "image_url": "https://cdn.grancamerino.com/teams/barcelona-new.png",
+    "created_at": "2024-03-03T14:30:00.000000Z",
+    "updated_at": "2024-03-03T14:35:00.000000Z",
+    "country": {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401",
+      "name": "Spain",
+      "continent_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b501"
+    },
+    "league": {
+      "id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b201",
+      "name": "La Liga",
+      "country_id": "9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b401"
+    }
+  }
+}
+```
+</ResponseExample>
+
+---
+
+## Delete Team
+
+<api method="DELETE" url="https://api.grancamerino.com/api/teams/{id}" auth="Bearer" />
+
+<Note type="warning">
+  **Admin Only** - Requires authentication with admin privileges
+</Note>
+
+Delete a team from the system.
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with admin privileges
+</ParamField>
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Team UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="status" type="string">
+  Response status ("success")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Confirmation message
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X DELETE https://api.grancamerino.com/api/teams/9d445a8c-8c3a-4d9d-bb4c-f0a6c2e8b303 \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": "success",
+  "message": "Team deleted successfully"
+}
+```
+</ResponseExample>

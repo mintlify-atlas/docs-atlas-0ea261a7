@@ -1,0 +1,513 @@
+---
+title: Payment processing
+description: Learn how the Gran Camerino API integrates Wompi and NOWPayments for Colombian peso and cryptocurrency payments
+---
+
+The Gran Camerino API supports dual payment gateways to serve different customer needs:
+
+- **Wompi** - Colombian payment gateway for COP (Colombian pesos) transactions
+- **NOWPayments** - Cryptocurrency payment processor for global customers
+
+Both integrations are managed through the `OrderController` with dedicated service classes.
+
+## Payment gateway selection
+
+When creating an order, clients specify which payment gateway to use (`app/Http/Controllers/OrderController.php:116`):
+
+```php
+$validated = $request->validate([
+    'payment_gateway' => 'required|in:wompi,nowpayments,paymentnow',
+    'crypto_currency' => 'nullable|string',
+    'redirect_url' => 'nullable|url',
+    // ... other fields
+]);
+```
+
+<Note>
+  Products store prices in both USD and COP. The appropriate currency is selected based on the payment gateway.
+</Note>
+
+## Wompi integration
+
+Wompi is Colombia's leading payment gateway, supporting credit cards, bank transfers, and local payment methods.
+
+### Service configuration
+
+The `WompiService` (`app/Services/WompiService.php:8`) requires configuration in `.env`:
+
+```bash
+WOMPI_PUBLIC_KEY=pub_test_...
+WOMPI_PRIVATE_KEY=prv_test_...
+WOMPI_INTEGRITY_SECRET=test_integrity_...
+WOMPI_EVENTS_SECRET=test_events_...
+WOMPI_URL=https://sandbox.wompi.co/v1
+```
+
+### Payment flow
+
+#### 1. Create order and payment link
+
+When a customer creates an order, the system generates Wompi payment data (`app/Http/Controllers/OrderController.php:219`):
+
+```php
+if ($validated['payment_gateway'] === 'wompi') {
+    $paymentData = $this->wompiService->createPaymentData(
+        $order->id,
+        $totalAmount,
+        $request->user()->email,
+        $redirectUrl
+    );
+
+    $checkoutUrl = $this->wompiService->buildCheckoutUrl(
+        $paymentData,
+        null, // customer name
+        null  // customer phone
+    );
+
+    $order->update([
+        'payment_reference' => $order->id,
+        'payment_data' => $paymentData,
+    ]);
+}
+```
+
+**Response includes:**
+```json
+{
+  "status": "success",
+  "data": {
+    "order_id": "9d4f3c2a-1b2c-4d5e-8f9a-1b2c3d4e5f6a",
+    "checkout_url": "https://checkout.wompi.co/p/?public-key=...",
+    "payment_data": {
+      "public_key": "pub_test_...",
+      "amount_in_cents": 30000000,
+      "reference": "9d4f3c2a-1b2c-4d5e-8f9a-1b2c3d4e5f6a",
+      "signature": "a3f5b2c1..."
+    }
+  }
+}
+```
+
+#### 2. Integrity signature generation
+
+Wompi requires SHA256 signatures to prevent tampering (`app/Services/WompiService.php:26`):
+
+```php
+public function generateIntegritySignature(
+    string $reference, 
+    int $amountInCents, 
+    string $currency = 'COP'
+): string {
+    $concatenated = $reference . $amountInCents . $currency . $this->integritySecret;
+    $signature = hash('sha256', $concatenated);
+    
+    Log::info('Wompi: Signature Generation', [
+        'reference' => $reference,
+        'amount_in_cents' => $amountInCents,
+        'currency' => $currency,
+        'signature' => $signature,
+    ]);
+    
+    return $signature;
+}
+```
+
+<Warning>
+  Always convert amounts to cents (multiply by 100) before generating signatures. Wompi requires amounts in the smallest currency unit.
+</Warning>
+
+#### 3. Checkout URL construction
+
+The service builds a complete Wompi checkout URL (`app/Services/WompiService.php:131`):
+
+```php
+public function buildCheckoutUrl(array $paymentData): string
+{
+    $baseUrl = 'https://checkout.wompi.co/p/';
+    
+    $params = [];
+    $params[] = 'public-key=' . urlencode($paymentData['public_key']);
+    $params[] = 'currency=' . urlencode($paymentData['currency']);
+    $params[] = 'amount-in-cents=' . urlencode($paymentData['amount_in_cents']);
+    $params[] = 'reference=' . urlencode($paymentData['reference']);
+    $params[] = 'signature:integrity=' . urlencode($paymentData['signature']);
+    
+    if (!empty($paymentData['redirect_url'])) {
+        $params[] = 'redirect-url=' . urlencode($paymentData['redirect_url']);
+    }
+    
+    if (!empty($paymentData['customer_email'])) {
+        $params[] = 'customer-data:email=' . urlencode($paymentData['customer_email']);
+    }
+
+    return $baseUrl . '?' . implode('&', $params);
+}
+```
+
+Customers are redirected to this URL to complete payment.
+
+### Webhook handling
+
+Wompi sends webhook notifications when payment status changes (`app/Http/Controllers/OrderController.php:434`):
+
+```php
+public function wompiWebhook(Request $request): JsonResponse
+{
+    $payload = $request->getContent();
+    $decodedPayload = json_decode($payload, true);
+    
+    $event = $decodedPayload['event'] ?? null;
+    $data = $decodedPayload['data']['transaction'] ?? null;
+
+    if ($event === 'transaction.updated' && $data['status'] === 'APPROVED') {
+        $order = Order::where('id', $data['reference'])->first();
+        
+        if ($order && $order->status === 'pending') {
+            $order->update([
+                'status' => 'paid',
+                'payment_data' => array_merge($order->payment_data ?? [], [
+                    'transaction_id' => $data['id'],
+                    'payment_method' => $data['payment_method_type'],
+                    'status' => $data['status'],
+                ]),
+                'paid_at' => now(),
+            ]);
+        }
+    }
+
+    return response()->json(['status' => 'success']);
+}
+```
+
+**Webhook endpoint:** `POST /api/webhooks/wompi`
+
+<Note>
+  This endpoint is public (no authentication) to allow Wompi servers to send notifications.
+</Note>
+
+### Webhook signature verification
+
+Wompi webhooks include checksums for security (`app/Services/WompiService.php:239`):
+
+```php
+public function verifyEventChecksum(string $payload, ?string $checksum = null): bool
+{
+    $decodedPayload = json_decode($payload, true);
+    
+    $timestamp = $decodedPayload['timestamp'] ?? '';
+    $properties = $decodedPayload['signature']['properties'] ?? [];
+    
+    // Concatenate property values + timestamp + events_secret
+    $concatenated = '';
+    foreach ($properties as $property) {
+        $value = $this->getNestedValue($decodedPayload['data'], $property);
+        $concatenated .= $value;
+    }
+    $concatenated .= $timestamp;
+    $concatenated .= $this->eventsSecret;
+    
+    // Calculate SHA256 (NOT HMAC)
+    $expectedChecksum = hash('sha256', $concatenated);
+    
+    return hash_equals($expectedChecksum, $checksum);
+}
+```
+
+## NOWPayments integration
+
+NOWPayments enables cryptocurrency payments with support for 150+ coins including Bitcoin, Ethereum, and USDT.
+
+### Service configuration
+
+The `NOWPaymentsService` (`app/Services/NOWPaymentsService.php:8`) requires:
+
+```bash
+NOWPAYMENTS_API_KEY=your_api_key
+NOWPAYMENTS_IPN_SECRET=your_ipn_secret
+NOWPAYMENTS_URL=https://api.nowpayments.io/v1
+```
+
+### Payment flow
+
+#### 1. Get available cryptocurrencies
+
+Clients can fetch supported currencies (`app/Services/NOWPaymentsService.php:24`):
+
+```php
+public function getAvailableCurrencies(): ?array
+{
+    try {
+        $response = Http::withHeaders([
+            'x-api-key' => $this->apiKey,
+        ])->get("{$this->baseUrl}/currencies");
+        
+        if ($response->successful()) {
+            return $response->json()['currencies'] ?? [];
+        }
+        
+        return null;
+    } catch (\Exception $e) {
+        Log::error('NOWPayments: Exception getting currencies', ['error' => $e->getMessage()]);
+        return null;
+    }
+}
+```
+
+**Endpoint:** `GET /api/crypto-currencies`
+
+#### 2. Create invoice
+
+When a customer selects crypto payment, the system creates a NOWPayments invoice (`app/Http/Controllers/OrderController.php:299`):
+
+```php
+if ($validated['payment_gateway'] === 'nowpayments') {
+    $nowPaymentData = [
+        'price_amount' => $totalAmount,
+        'price_currency' => 'usd',
+        'ipn_callback_url' => route('nowpayments.webhook'),
+        'order_id' => $order->id,
+        'order_description' => "Order #{$order->order_number}",
+    ];
+    
+    if ($cryptoCurrency) {
+        $nowPaymentData['pay_currency'] = strtolower($cryptoCurrency);
+    }
+
+    $invoice = $this->nowPaymentsService->createInvoice($nowPaymentData);
+
+    $order->update([
+        'payment_reference' => $invoice['id'] ?? null,
+        'payment_data' => [
+            'invoice_id' => $invoice['id'],
+            'invoice_url' => $invoice['invoice_url'],
+            'pay_currency' => $invoice['pay_currency'],
+        ],
+    ]);
+}
+```
+
+The invoice service (`app/Services/NOWPaymentsService.php:124`):
+
+```php
+public function createInvoice(array $data): ?array
+{
+    try {
+        $response = Http::withHeaders([
+            'x-api-key' => $this->apiKey,
+            'Content-Type' => 'application/json',
+        ])->post("{$this->baseUrl}/invoice", $data);
+        
+        if ($response->successful()) {
+            return $response->json();
+        }
+        
+        Log::error('NOWPayments: Failed to create invoice', [
+            'status' => $response->status(),
+            'response' => $response->json(),
+        ]);
+        return null;
+    } catch (\Exception $e) {
+        Log::error('NOWPayments: Exception creating invoice', [
+            'error' => $e->getMessage(),
+        ]);
+        return null;
+    }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "order_id": "9d4f3c2a-1b2c-4d5e-8f9a-1b2c3d4e5f6a",
+    "payment_url": "https://nowpayments.io/payment/?iid=5543821",
+    "payment_data": {
+      "invoice_id": "5543821",
+      "pay_currency": "btc"
+    }
+  }
+}
+```
+
+#### 3. Price estimation
+
+Get real-time crypto conversion rates (`app/Services/NOWPaymentsService.php:45`):
+
+```php
+public function getEstimatedPrice(
+    float $amount, 
+    string $currencyFrom = 'usd', 
+    string $currencyTo = 'btc'
+): ?array {
+    $response = Http::withHeaders([
+        'x-api-key' => $this->apiKey,
+    ])->get("{$this->baseUrl}/estimate", [
+        'amount' => $amount,
+        'currency_from' => $currencyFrom,
+        'currency_to' => $currencyTo,
+    ]);
+    
+    if ($response->successful()) {
+        return $response->json();
+    }
+    
+    return null;
+}
+```
+
+**Endpoint:** `POST /api/crypto-estimate`
+
+### Webhook handling (IPN)
+
+NOWPayments sends Instant Payment Notifications when payment status changes (`app/Http/Controllers/OrderController.php:541`):
+
+```php
+public function nowPaymentsWebhook(Request $request): JsonResponse
+{
+    // Verify signature
+    $signature = $request->header('x-nowpayments-sig');
+    $payload = $request->getContent();
+    
+    if (!$this->nowPaymentsService->verifyIPNSignature($payload, $signature)) {
+        Log::warning('NOWPayments: Invalid IPN signature');
+        return response()->json(['error' => 'Invalid signature'], 401);
+    }
+
+    $data = $request->all();
+    $orderId = $data['order_id'] ?? null;
+    $paymentStatus = $data['payment_status'] ?? null;
+
+    $order = Order::find($orderId);
+    
+    // Update payment data
+    $order->payment_data = array_merge($order->payment_data ?? [], [
+        'payment_id' => $data['payment_id'],
+        'payment_status' => $paymentStatus,
+        'pay_amount' => $data['pay_amount'],
+        'actually_paid' => $data['actually_paid'],
+    ]);
+
+    // Update order status based on payment status
+    switch ($paymentStatus) {
+        case 'finished':
+            $order->status = 'paid';
+            $order->paid_at = now();
+            break;
+        case 'failed':
+        case 'expired':
+        case 'refunded':
+            $order->status = 'failed';
+            break;
+        default:
+            $order->status = 'pending';
+    }
+
+    $order->save();
+
+    return response()->json(['status' => 'success']);
+}
+```
+
+**Webhook endpoint:** `POST /api/webhooks/nowpayments`
+
+### IPN signature verification
+
+NOWPayments uses HMAC-SHA512 for webhook authentication (`app/Services/NOWPaymentsService.php:114`):
+
+```php
+public function verifyIPNSignature(string $payload, string $signature): bool
+{
+    $expectedSignature = hash_hmac('sha512', $payload, $this->ipnSecret);
+    return hash_equals($expectedSignature, $signature);
+}
+```
+
+<Warning>
+  Always verify webhook signatures before processing payments to prevent fraud.
+</Warning>
+
+## Payment status tracking
+
+Orders have the following payment-related statuses:
+
+- `pending` - Order created, awaiting payment
+- `paid` - Payment confirmed
+- `failed` - Payment declined or failed
+- `preparing` - Order being prepared (admin updates)
+- `shipped` - Order shipped to customer
+- `delivered` - Order delivered
+- `cancelled` - Order cancelled
+
+### Manual status check
+
+Clients can manually check payment status (`app/Http/Controllers/OrderController.php:675`):
+
+```php
+public function checkPaymentStatus(Request $request, Order $order): JsonResponse
+{
+    if ($order->user_id !== $request->user()->id) {
+        return response()->json(['error' => 'Order not found'], 404);
+    }
+
+    $status = null;
+
+    if ($order->payment_gateway === 'wompi' && $order->payment_data['transaction_id'] ?? null) {
+        $status = $this->wompiService->getTransaction($order->payment_data['transaction_id']);
+    } elseif ($order->payment_gateway === 'nowpayments' && $order->payment_reference) {
+        $status = $this->nowPaymentsService->getPaymentStatus($order->payment_reference);
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'data' => [
+            'order_status' => $order->status,
+            'payment_status' => $status,
+        ]
+    ]);
+}
+```
+
+**Endpoint:** `GET /api/orders/{order}/payment-status`
+
+## Error handling
+
+Both services include comprehensive error logging:
+
+```php
+Log::error('NOWPayments: Failed to create invoice', [
+    'status' => $response->status(),
+    'response' => $response->json(),
+    'data_sent' => $data,
+]);
+```
+
+<Accordion title="Common Wompi errors">
+  - **403 Forbidden**: Invalid signature or missing parameters
+  - **401 Unauthorized**: Invalid API keys
+  - **Amount mismatch**: Ensure amounts are in cents (multiply by 100)
+  - **Invalid redirect_url**: Sandbox mode requires `http://localhost` (not https)
+</Accordion>
+
+<Accordion title="Common NOWPayments errors">
+  - **401 Unauthorized**: Invalid API key or IPN signature
+  - **Below minimum**: Check minimum payment amount for selected cryptocurrency
+  - **Currency not supported**: Verify currency is in available list
+  - **IPN verification failed**: Ensure IPN secret matches webhook signature
+</Accordion>
+
+## Testing payments
+
+### Wompi sandbox
+
+Use test cards in sandbox mode:
+- **Approved**: `4242 4242 4242 4242`
+- **Declined**: `4111 1111 1111 1111`
+
+### NOWPayments sandbox
+
+NOWPayments provides a sandbox environment with test cryptocurrency wallets. Contact their support for sandbox access.
+
+<Note>
+  Always test webhook handling thoroughly. Use tools like ngrok to expose local webhooks for testing.
+</Note>

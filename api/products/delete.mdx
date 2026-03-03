@@ -1,0 +1,65 @@
+---
+title: Delete Product
+api: DELETE /api/products/{product}
+---
+
+Delete a product and all its associated images and variants. This endpoint requires admin authentication.
+
+<Warning>
+  This endpoint requires admin privileges and permanently deletes the product along with all its images and variants. This action cannot be undone.
+</Warning>
+
+## Authentication
+
+Requires valid Bearer token with admin privileges.
+
+## Path Parameters
+
+<ParamField path="product" type="string" required>
+  Product UUID to delete
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Confirmation message: `Product deleted successfully`
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X DELETE "https://api.grancamerino.com/api/products/123e4567-e89b-12d3-a456-426614174000" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Accept: application/json"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "message": "Product deleted successfully"
+}
+```
+
+```json Not Found (404)
+{
+  "message": "No query results for model [App\\Models\\Product] 123e4567-e89b-12d3-a456-426614174999"
+}
+```
+
+```json Unauthorized (401)
+{
+  "message": "Unauthenticated."
+}
+```
+
+```json Forbidden (403)
+{
+  "message": "This action is unauthorized."
+}
+```
+</ResponseExample>

@@ -1,0 +1,454 @@
+---
+title: Image handling
+description: Learn how to upload, delete, and optimize images using Cloudinary integration in the Gran Camerino API
+---
+
+The Gran Camerino API uses Cloudinary for professional image management, providing automatic optimization, transformations, and a global CDN for fast delivery.
+
+## Cloudinary integration overview
+
+Cloudinary provides:
+- **Automatic format conversion**: Serves WebP to supported browsers, JPEG/PNG to others
+- **Quality optimization**: Automatically adjusts quality for optimal file size
+- **Responsive images**: Generate multiple sizes for different devices
+- **Transformations**: Resize, crop, and transform images on-the-fly
+- **Global CDN**: Fast delivery worldwide
+
+## Upload an image
+
+Upload images to Cloudinary and get back a secure URL for use in products, categories, teams, etc.
+
+<Steps>
+  <Step title="Prepare the image file">
+    Supported formats: JPEG, PNG, JPG, GIF, WebP
+    Maximum file size: 5MB
+  </Step>
+
+  <Step title="Send the upload request">
+    <CodeGroup>
+    ```bash cURL
+    curl -X POST https://api.grancamerino.com/api/images/upload \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -F "image=@/path/to/jersey.jpg" \
+      -F "type=product" \
+      -F "folder=products"
+    ```
+
+    ```javascript JavaScript
+    const formData = new FormData();
+    formData.append('image', fileInput.files[0]);
+    formData.append('type', 'product');
+    formData.append('folder', 'products');
+
+    const response = await fetch('https://api.grancamerino.com/api/images/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const data = await response.json();
+    console.log(data.data.url); // Use this URL for your product
+    ```
+
+    ```html HTML Form
+    <form id="uploadForm">
+      <input type="file" name="image" accept="image/*" required>
+      <select name="type">
+        <option value="product">Product</option>
+        <option value="category">Category</option>
+        <option value="team">Team</option>
+        <option value="league">League</option>
+        <option value="country">Country</option>
+      </select>
+      <button type="submit">Upload</button>
+    </form>
+
+    <script>
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      
+      const response = await fetch('/api/images/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      
+      const result = await response.json();
+      console.log('Uploaded:', result.data.url);
+    });
+    </script>
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Handle the response">
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "url": "https://res.cloudinary.com/grancamerino/image/upload/v1234567890/products/abc123def456.jpg",
+        "public_id": "products/abc123def456",
+        "width": 1200,
+        "height": 1200
+      }
+    }
+    ```
+
+    Store the `url` in your database and use it for product images, team logos, etc.
+  </Step>
+</Steps>
+
+### Image type configurations
+
+The API automatically applies different size constraints based on image type:
+
+| Type | Dimensions | Use Case |
+|------|------------|----------|
+| `product` | 1200×1200 | Product photos, jersey images |
+| `category` | 400×400 | Category icons and thumbnails |
+| `league` | 400×400 | League logos |
+| `team` | 300×300 | Team badges and logos |
+| `country` | 300×200 | Country flags |
+
+<Note>
+  Images are resized using `crop: limit`, which ensures images fit within the specified dimensions without exceeding them, maintaining aspect ratio.
+</Note>
+
+### Upload parameters
+
+- `image` (required): The image file to upload
+- `type` (optional): One of `product`, `category`, `league`, `team`, `country`. Defaults to `product`
+- `folder` (optional): Custom Cloudinary folder. Defaults to `{type}s` (e.g., "products", "teams")
+
+## Delete an image
+
+Remove images from Cloudinary using their public ID.
+
+```bash cURL
+curl -X POST https://api.grancamerino.com/api/images/delete \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "public_id": "products/abc123def456"
+  }'
+```
+
+<CodeGroup>
+```javascript JavaScript
+const response = await fetch('https://api.grancamerino.com/api/images/delete', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    public_id: 'products/abc123def456'
+  })
+});
+
+const result = await response.json();
+console.log(result.message);
+```
+</CodeGroup>
+
+Successful response:
+```json
+{
+  "status": "success",
+  "message": "Imagen eliminada correctamente"
+}
+```
+
+Error response:
+```json
+{
+  "status": "error",
+  "message": "No se pudo eliminar la imagen",
+  "error": "not_found"
+}
+```
+
+<Warning>
+  Deleting an image from Cloudinary is permanent and cannot be undone. Make sure to remove references from your database before deleting.
+</Warning>
+
+## Optimize and transform images
+
+Generate optimized URLs for images with specific dimensions and transformations.
+
+```bash cURL
+curl -X POST https://api.grancamerino.com/api/images/optimize \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "public_id": "products/abc123def456",
+    "width": 600,
+    "height": 600,
+    "crop": "fill"
+  }'
+```
+
+<CodeGroup>
+```javascript JavaScript
+const response = await fetch('https://api.grancamerino.com/api/images/optimize', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    public_id: 'products/abc123def456',
+    width: 600,
+    height: 600,
+    crop: 'fill'
+  })
+});
+
+const { data } = await response.json();
+console.log(data.optimized_url);
+```
+</CodeGroup>
+
+Response:
+```json
+{
+  "status": "success",
+  "data": {
+    "optimized_url": "https://res.cloudinary.com/grancamerino/image/upload/c_fill,h_600,w_600/products/abc123def456.jpg"
+  }
+}
+```
+
+### Optimization parameters
+
+- `public_id` (required): The Cloudinary public ID of the image
+- `width` (optional): Target width in pixels (1-2000)
+- `height` (optional): Target height in pixels (1-2000)
+- `crop` (optional): Crop mode - `fill`, `scale`, `thumb`, or `limit`
+
+### Crop modes explained
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `fill` | Fills the exact dimensions, may crop | Thumbnails, profile pictures |
+| `scale` | Scales to fit, maintains aspect ratio | Product listings |
+| `thumb` | Intelligent thumbnail with face detection | User avatars |
+| `limit` | Only shrinks if larger, never enlarges | Responsive images |
+
+## Using the CloudinaryService
+
+The API includes a `CloudinaryService` class that provides additional functionality for working with Cloudinary.
+
+### Upload with custom options
+
+From the source code at `app/Services/CloudinaryService.php`:
+
+```php
+use App\Services\CloudinaryService;
+
+// Upload with custom options
+$result = CloudinaryService::uploadImage(
+    $file,
+    'products',
+    [
+        'quality' => 'auto:best',
+        'fetch_format' => 'auto',
+        'width' => 1200,
+        'height' => 1200,
+        'crop' => 'limit'
+    ]
+);
+
+if ($result['success']) {
+    $url = $result['url'];
+    $publicId = $result['public_id'];
+    $size = $result['size'];
+}
+```
+
+### Delete from service
+
+```php
+$result = CloudinaryService::deleteImage('products/abc123def456');
+
+if ($result['success']) {
+    echo $result['message']; // "Image deleted successfully"
+}
+```
+
+### Generate optimized URLs
+
+```php
+// Get optimized URL with transformations
+$url = CloudinaryService::getOptimizedUrl(
+    'products/abc123def456',
+    [
+        'width' => 800,
+        'height' => 800,
+        'crop' => 'fill',
+        'quality' => 'auto:best'
+    ]
+);
+```
+
+### Generate thumbnail URLs
+
+```php
+// Generate 200x200 thumbnail
+$thumbnailUrl = CloudinaryService::getThumbnailUrl(
+    'products/abc123def456',
+    200,
+    200
+);
+```
+
+### Generate responsive image sets
+
+```php
+// Get multiple sizes for responsive images
+$urls = CloudinaryService::getResponsiveUrls(
+    'products/abc123def456',
+    [320, 640, 960, 1280, 1920]
+);
+
+// Returns:
+// [
+//     320 => "https://res.cloudinary.com/.../w_320/...",
+//     640 => "https://res.cloudinary.com/.../w_640/...",
+//     960 => "https://res.cloudinary.com/.../w_960/...",
+//     ...
+// ]
+```
+
+## Image formats and automatic optimization
+
+Cloudinary automatically optimizes images:
+
+### Automatic format selection
+- **WebP**: Delivered to Chrome, Edge, Firefox, Opera
+- **JPEG**: Fallback for Safari and older browsers
+- **PNG**: For images requiring transparency
+
+### Quality optimization
+- `quality: auto` - Cloudinary analyzes each image and applies optimal quality
+- `quality: auto:best` - Higher quality threshold
+- `quality: auto:good` - Balanced quality/size
+- `quality: auto:eco` - Smaller file sizes
+
+### Fetch format
+- `fetch_format: auto` - Automatically serves the best format for each browser
+
+## Advanced transformations
+
+Cloudinary supports many transformations beyond basic resizing:
+
+### Chained transformations
+
+Build complex transformation URLs:
+
+```
+https://res.cloudinary.com/grancamerino/image/upload/
+  c_fill,h_400,w_400/      # Crop to square
+  e_sharpen:100/            # Apply sharpening
+  q_auto:best/              # Optimize quality
+  f_auto/                   # Auto format
+  products/abc123.jpg
+```
+
+### Common transformations
+
+- `c_fill,g_face` - Crop with face detection
+- `e_grayscale` - Convert to grayscale
+- `e_blur:300` - Apply blur effect
+- `q_auto:eco,f_auto` - Maximum compression
+- `w_300,h_300,c_thumb,g_center` - Centered thumbnail
+
+## Best practices
+
+<Steps>
+  <Step title="Upload original high-quality images">
+    Upload the highest quality source images. Cloudinary will automatically optimize and serve smaller versions.
+  </Step>
+
+  <Step title="Use automatic format and quality">
+    Always include `quality: auto` and `fetch_format: auto` in your upload options for best results.
+  </Step>
+
+  <Step title="Generate responsive images">
+    Use `getResponsiveUrls()` to create multiple sizes for different screen sizes and serve them with `srcset`.
+  </Step>
+
+  <Step title="Store public_id in database">
+    Save the Cloudinary `public_id` along with the URL. This allows you to delete images and generate new transformations later.
+  </Step>
+
+  <Step title="Use appropriate crop modes">
+    - Product images: `limit` to preserve full image
+    - Thumbnails: `fill` or `thumb` for consistent sizes
+    - Galleries: `scale` to maintain aspect ratios
+  </Step>
+</Steps>
+
+## Error handling
+
+### Upload errors
+
+```json
+{
+  "status": "error",
+  "message": "Error al subir la imagen",
+  "errors": {
+    "image": ["The image must be an image."]
+  }
+}
+```
+
+Common upload errors:
+- File too large (>5MB)
+- Invalid file type
+- Cloudinary configuration missing
+- Network timeout
+
+### Delete errors
+
+```json
+{
+  "status": "error",
+  "message": "No se pudo eliminar la imagen",
+  "error": "not_found"
+}
+```
+
+### Configuration errors
+
+```json
+{
+  "status": "error",
+  "error": "Cloudinary is not configured. Please check your .env file."
+}
+```
+
+Ensure these environment variables are set:
+```
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+## Local development
+
+For local development, the API automatically disables SSL verification to prevent certificate issues:
+
+```php
+// Automatically configured in local/debug mode
+if (config('app.env') === 'local' || config('app.debug')) {
+    // SSL verification disabled for development
+}
+```
+
+<Note>
+  SSL verification is only disabled in development. Production environments always use full SSL verification.
+</Note>

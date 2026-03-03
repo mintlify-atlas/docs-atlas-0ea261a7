@@ -1,0 +1,310 @@
+---
+title: User management
+description: Admin endpoints for managing users, roles, and user data
+---
+
+<Warning>All endpoints on this page require admin authentication.</Warning>
+
+## List users
+
+### GET /api/users
+
+Retrieve a paginated list of all users with filtering and search.
+
+#### Query parameters
+
+<ParamField query="is_admin" type="boolean">
+  Filter by admin status. `true` for admins only, `false` for customers only.
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search by name or email
+</ParamField>
+
+<ParamField query="sort_by" type="string">
+  Sort field. Options: `name`, `email`, `created_at`, `updated_at`. Default: `created_at`.
+</ParamField>
+
+<ParamField query="sort_order" type="string">
+  Sort direction. Options: `asc`, `desc`. Default: `desc`.
+</ParamField>
+
+<ParamField query="per_page" type="integer">
+  Items per page. Range: 1-100. Default: 20.
+</ParamField>
+
+#### Response
+
+```json
+{
+  "status": "success",
+  "data": {
+    "current_page": 1,
+    "data": [
+      {
+        "id": "9d3c5e7f-1234-5678-9abc-def012345678",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "is_admin": false,
+        "created_at": "2026-03-01T10:00:00.000000Z",
+        "updated_at": "2026-03-01T10:00:00.000000Z"
+      }
+    ],
+    "per_page": 20,
+    "total": 150
+  }
+}
+```
+
+---
+
+## Create user
+
+### POST /api/users
+
+Create a new user account.
+
+#### Request body
+
+<ParamField body="name" type="string" required>
+  User's full name. Maximum 255 characters.
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  User's email address. Must be unique.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User password. Minimum 8 characters.
+</ParamField>
+
+<ParamField body="password_confirmation" type="string" required>
+  Password confirmation. Must match password.
+</ParamField>
+
+<ParamField body="is_admin" type="boolean">
+  Whether the user should have admin privileges. Default: `false`.
+</ParamField>
+
+#### Example request
+
+```bash
+curl -X POST https://api.grancamerino.com/api/users \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "password": "securePassword123",
+    "password_confirmation": "securePassword123",
+    "is_admin": false
+  }'
+```
+
+---
+
+## Get user
+
+### GET /api/users/{user}
+
+Get details for a specific user.
+
+#### Response
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "9d3c5e7f-1234-5678-9abc-def012345678",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "is_admin": false,
+    "created_at": "2026-03-01T10:00:00.000000Z",
+    "updated_at": "2026-03-01T10:00:00.000000Z"
+  }
+}
+```
+
+---
+
+## Update user
+
+### PUT /api/users/{user}
+
+Update user information.
+
+#### Request body
+
+<ParamField body="name" type="string">
+  User's full name
+</ParamField>
+
+<ParamField body="email" type="string">
+  User's email address (must be unique)
+</ParamField>
+
+<ParamField body="password" type="string">
+  New password (minimum 8 characters)
+</ParamField>
+
+<ParamField body="password_confirmation" type="string">
+  Password confirmation (required if password is provided)
+</ParamField>
+
+<ParamField body="is_admin" type="boolean">
+  Admin status
+</ParamField>
+
+---
+
+## Delete user
+
+### DELETE /api/users/{user}
+
+Delete a user account.
+
+<Warning>You cannot delete your own account. Returns 403 error if attempted.</Warning>
+
+#### Response
+
+```json
+{
+  "status": "success",
+  "message": "User deleted successfully"
+}
+```
+
+---
+
+## Toggle admin status
+
+### PATCH /api/users/{user}/toggle-admin
+
+Toggle a user's admin status.
+
+<Warning>You cannot change your own admin status. Returns 403 error if attempted.</Warning>
+
+#### Response
+
+```json
+{
+  "status": "success",
+  "message": "Admin status updated successfully",
+  "data": {
+    "id": "9d3c5e7f-1234-5678-9abc-def012345678",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "is_admin": true,
+    "created_at": "2026-03-01T10:00:00.000000Z",
+    "updated_at": "2026-03-03T15:30:00.000000Z"
+  }
+}
+```
+
+---
+
+## Update password
+
+### PATCH /api/users/{user}/password
+
+Update a user's password (admin can change any user's password).
+
+#### Request body
+
+<ParamField body="password" type="string" required>
+  New password. Minimum 8 characters.
+</ParamField>
+
+<ParamField body="password_confirmation" type="string" required>
+  Password confirmation. Must match password.
+</ParamField>
+
+---
+
+## User statistics
+
+### GET /api/users/statistics
+
+Get statistics about users in the system.
+
+#### Response
+
+```json
+{
+  "status": "success",
+  "data": {
+    "total_users": 1523,
+    "total_admins": 5,
+    "total_customers": 1518,
+    "recent_users": 87,
+    "users_with_orders": 945
+  }
+}
+```
+
+<ResponseField name="total_users" type="integer">
+  Total number of users
+</ResponseField>
+
+<ResponseField name="total_admins" type="integer">
+  Number of admin users
+</ResponseField>
+
+<ResponseField name="total_customers" type="integer">
+  Number of customer users
+</ResponseField>
+
+<ResponseField name="recent_users" type="integer">
+  Users created in the last 30 days
+</ResponseField>
+
+<ResponseField name="users_with_orders" type="integer">
+  Users who have placed at least one order
+</ResponseField>
+
+---
+
+## User's orders
+
+### GET /api/users/{user}/orders
+
+Get all orders for a specific user.
+
+#### Response
+
+```json
+{
+  "status": "success",
+  "data": {
+    "current_page": 1,
+    "data": [
+      {
+        "id": "9d3c5e7f-order-1234",
+        "total_cop": 250000,
+        "total_usd": 65.00,
+        "status": "delivered",
+        "items": [...],
+        "created_at": "2026-03-01T10:00:00.000000Z"
+      }
+    ],
+    "per_page": 20,
+    "total": 5
+  }
+}
+```
+
+---
+
+## User's addresses
+
+### GET /api/users/{user}/addresses
+
+Get all addresses for a specific user.
+
+---
+
+## User's favorites
+
+### GET /api/users/{user}/favorites
+
+Get all favorited products for a specific user.

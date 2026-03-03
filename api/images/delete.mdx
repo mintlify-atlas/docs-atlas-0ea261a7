@@ -1,0 +1,87 @@
+---
+title: Delete image
+description: Delete an image from Cloudinary using its public ID
+---
+
+## POST /api/images/delete
+
+Delete an image from Cloudinary storage.
+
+<Warning>Requires authentication with a valid Bearer token.</Warning>
+
+## Request
+
+### Headers
+
+```http
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+### Parameters
+
+<ParamField body="public_id" type="string" required>
+  The Cloudinary public ID of the image to delete. This is returned when you upload an image.
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success` or `error`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Result message
+</ResponseField>
+
+## Example
+
+### Request
+
+```bash
+curl -X POST https://api.grancamerino.com/api/images/delete \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "public_id": "products/jerseys/abc123"
+  }'
+```
+
+### Success response
+
+```json
+{
+  "status": "success",
+  "message": "Imagen eliminada correctamente"
+}
+```
+
+## Error responses
+
+### Validation error (422)
+
+```json
+{
+  "status": "error",
+  "message": "Error al eliminar la imagen",
+  "errors": {
+    "public_id": [
+      "The public id field is required."
+    ]
+  }
+}
+```
+
+### Delete failed (500)
+
+```json
+{
+  "status": "error",
+  "message": "No se pudo eliminar la imagen",
+  "error": "not found"
+}
+```
+
+<Note>
+  Make sure to delete images from Cloudinary when removing products or updating product images to avoid orphaned files.
+</Note>

@@ -1,0 +1,249 @@
+---
+title: List Products
+api: GET /api/products
+---
+
+Retrieve a paginated list of products with advanced filtering and sorting capabilities.
+
+## Query Parameters
+
+<ParamField query="category_id" type="string">
+  Filter products by category ID (UUID)
+</ParamField>
+
+<ParamField query="team_id" type="string">
+  Filter products by team ID (UUID)
+</ParamField>
+
+<ParamField query="country_id" type="string">
+  Filter products by country ID (through team relationship)
+</ParamField>
+
+<ParamField query="league_id" type="string">
+  Filter products by league ID (through team relationship)
+</ParamField>
+
+<ParamField query="special_category_id" type="string">
+  Filter products by special category ID (e.g., vintage, limited edition)
+</ParamField>
+
+<ParamField query="is_active" type="boolean">
+  Filter by active/inactive status. Accepts `true`, `false`, `1`, or `0`
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search products by name, description, or slug (case-insensitive partial match)
+</ParamField>
+
+<ParamField query="min_price_usd" type="number">
+  Minimum price in USD
+</ParamField>
+
+<ParamField query="max_price_usd" type="number">
+  Maximum price in USD
+</ParamField>
+
+<ParamField query="min_price_cop" type="number">
+  Minimum price in COP (Colombian Pesos)
+</ParamField>
+
+<ParamField query="max_price_cop" type="number">
+  Maximum price in COP (Colombian Pesos)
+</ParamField>
+
+<ParamField query="sort_by" type="string" default="created_at">
+  Field to sort by. Allowed values: `name`, `price_usd`, `price_cop`, `created_at`, `updated_at`
+</ParamField>
+
+<ParamField query="sort_order" type="string" default="desc">
+  Sort order. Values: `asc` or `desc`
+</ParamField>
+
+<ParamField query="per_page" type="integer" default="20">
+  Number of items per page (max: 100)
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Paginated product collection
+  
+  <ResponseField name="data" type="array">
+    Array of product objects
+    
+    <ResponseField name="id" type="string">
+      Product UUID
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Product name
+    </ResponseField>
+    
+    <ResponseField name="slug" type="string">
+      URL-friendly identifier
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Product description
+    </ResponseField>
+    
+    <ResponseField name="price_usd" type="number">
+      Price in USD
+    </ResponseField>
+    
+    <ResponseField name="price_cop" type="number">
+      Price in Colombian Pesos
+    </ResponseField>
+    
+    <ResponseField name="is_active" type="boolean">
+      Whether the product is active
+    </ResponseField>
+    
+    <ResponseField name="category" type="object">
+      Product category with id, name, slug
+    </ResponseField>
+    
+    <ResponseField name="team" type="object">
+      Team information including country and league
+    </ResponseField>
+    
+    <ResponseField name="images" type="array">
+      Product images with url and is_primary flag
+    </ResponseField>
+    
+    <ResponseField name="variants" type="array">
+      Available product variants with size information
+    </ResponseField>
+    
+    <ResponseField name="special_categories" type="array">
+      Special categories (vintage, limited edition, etc.)
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      Creation timestamp
+    </ResponseField>
+    
+    <ResponseField name="updated_at" type="string">
+      Last update timestamp
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="current_page" type="integer">
+    Current page number
+  </ResponseField>
+  
+  <ResponseField name="last_page" type="integer">
+    Total number of pages
+  </ResponseField>
+  
+  <ResponseField name="per_page" type="integer">
+    Items per page
+  </ResponseField>
+  
+  <ResponseField name="total" type="integer">
+    Total number of products matching filters
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X GET "https://api.grancamerino.com/api/products?category_id=123e4567-e89b-12d3-a456-426614174000&min_price_usd=50&max_price_usd=150&sort_by=price_usd&sort_order=asc&per_page=10" \
+  -H "Accept: application/json"
+```
+
+```bash Search Example
+curl -X GET "https://api.grancamerino.com/api/products?search=barcelona&is_active=true" \
+  -H "Accept: application/json"
+```
+
+```bash Filter by Country and League
+curl -X GET "https://api.grancamerino.com/api/products?country_id=123e4567-e89b-12d3-a456-426614174001&league_id=123e4567-e89b-12d3-a456-426614174002" \
+  -H "Accept: application/json"
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "data": {
+    "current_page": 1,
+    "data": [
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "name": "FC Barcelona Home Jersey 2024",
+        "slug": "fc-barcelona-home-jersey-2024",
+        "description": "Official FC Barcelona home jersey for the 2024 season",
+        "price_usd": 89.99,
+        "price_cop": 359960,
+        "is_active": true,
+        "category_id": "123e4567-e89b-12d3-a456-426614174001",
+        "team_id": "123e4567-e89b-12d3-a456-426614174002",
+        "category": {
+          "id": "123e4567-e89b-12d3-a456-426614174001",
+          "name": "Club Jerseys",
+          "slug": "club-jerseys"
+        },
+        "team": {
+          "id": "123e4567-e89b-12d3-a456-426614174002",
+          "name": "FC Barcelona",
+          "slug": "fc-barcelona",
+          "country": {
+            "id": "123e4567-e89b-12d3-a456-426614174003",
+            "name": "Spain",
+            "code": "ES"
+          },
+          "league": {
+            "id": "123e4567-e89b-12d3-a456-426614174004",
+            "name": "La Liga",
+            "slug": "la-liga"
+          }
+        },
+        "images": [
+          {
+            "id": "123e4567-e89b-12d3-a456-426614174005",
+            "url": "https://storage.grancamerino.com/products/barcelona-home-2024.jpg",
+            "is_primary": true
+          }
+        ],
+        "variants": [
+          {
+            "id": "123e4567-e89b-12d3-a456-426614174006",
+            "size": {
+              "id": "123e4567-e89b-12d3-a456-426614174007",
+              "name": "M",
+              "code": "M"
+            }
+          },
+          {
+            "id": "123e4567-e89b-12d3-a456-426614174008",
+            "size": {
+              "id": "123e4567-e89b-12d3-a456-426614174009",
+              "name": "L",
+              "code": "L"
+            }
+          }
+        ],
+        "special_categories": [],
+        "created_at": "2024-01-15T10:30:00.000000Z",
+        "updated_at": "2024-01-20T14:45:00.000000Z"
+      }
+    ],
+    "first_page_url": "https://api.grancamerino.com/api/products?page=1",
+    "from": 1,
+    "last_page": 5,
+    "last_page_url": "https://api.grancamerino.com/api/products?page=5",
+    "next_page_url": "https://api.grancamerino.com/api/products?page=2",
+    "path": "https://api.grancamerino.com/api/products",
+    "per_page": 20,
+    "prev_page_url": null,
+    "to": 20,
+    "total": 87
+  }
+}
+```
+</ResponseExample>
